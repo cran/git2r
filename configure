@@ -626,6 +626,7 @@ ac_header_list=
 ac_func_list=
 ac_subst_vars='LTLIBOBJS
 GIT2R_SRC_REGEX
+GIT2R_SRC_HASH_GENERIC
 LIBOBJS
 ALLOCA
 EGREP
@@ -3744,10 +3745,25 @@ fi
 
 fi
 
+# Specify sha1 implementation
 if test "x${have_crypto}" = xyes; then
+        if test "x${OPENSSL_INCLUDES}" != x; then
+                CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
+        fi
+
         CPPFLAGS="${CPPFLAGS} -DGIT_SSL"
+
+        case "${host_os}" in
+          darwin*)
+                CPPFLAGS="${CPPFLAGS} -DGIT_COMMON_CRYPTO"
+          ;;
+          *)
+                CPPFLAGS="${CPPFLAGS} -DOPENSSL_SHA1"
+          ;;
+        esac
 else
         LIBS=${OLD_LIBS}
+        GIT2R_SRC_HASH_GENERIC=libgit2/hash/hash_generic.o
         { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
   -----------------------------------------------
    Unable to find OpenSSL on this system.
@@ -5664,6 +5680,7 @@ _ACEOF
 
 fi
 done
+
 
 
 
