@@ -14,21 +14,6 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-##' Display status
-##' @keywords internal
-display_status <- function(title, section) {
-    cat(sprintf("%s:\n", title))
-
-    for(i in seq_len(length(section))) {
-        label <- names(section)[i]
-        label <- paste0(toupper(substr(label, 1, 1)),
-                        substr(label, 2, nchar(label)))
-        cat(paste0("\t", label, ":   ", section[[i]], "\n"))
-    }
-
-    invisible(NULL)
-}
-
 ##' Status
 ##'
 ##' Display state of the repository working directory and the staging
@@ -40,8 +25,7 @@ display_status <- function(title, section) {
 ##' @param unstaged Include unstaged files. Default TRUE.
 ##' @param untracked Include untracked files. Default TRUE.
 ##' @param ignored Include ignored files. Default FALSE.
-##' @param verbose Display status. Default TRUE.
-##' @return invisible(list) with repository status
+##' @return S3 class \code{git_status} with repository status
 ##' @keywords methods
 ##' @include S4_classes.r
 ##' @examples
@@ -92,45 +76,70 @@ setGeneric("status",
                     staged    = TRUE,
                     unstaged  = TRUE,
                     untracked = TRUE,
-                    ignored   = FALSE,
-                    verbose   = TRUE)
+                    ignored   = FALSE)
            standardGeneric("status"))
 
 ##' @rdname status-methods
 ##' @export
 setMethod("status",
-          signature(repo = "git_repository"),
-          function (repo, staged, unstaged, untracked, ignored, verbose)
+          signature(repo = "missing"),
+          function(repo, staged, unstaged, untracked, ignored)
           {
-              s <- .Call(git2r_status_list,
-                         repo,
-                         staged,
-                         unstaged,
-                         untracked,
-                         ignored)
-
-              if (verbose) {
-                  if (length(s$ignored)) {
-                      display_status("Ignored files", s$ignored)
-                      cat("\n")
-                  }
-
-                  if (length(s$untracked)) {
-                      display_status("Untracked files", s$untracked)
-                      cat("\n")
-                  }
-
-                  if (length(s$unstaged)) {
-                      display_status("Unstaged changes", s$unstaged)
-                      cat("\n")
-                  }
-
-                  if (length(s$staged)) {
-                      display_status("Staged changes", s$staged)
-                      cat("\n")
-                  }
-              }
-
-              invisible(s)
+              status(repo      = repository(getwd(), discover = TRUE),
+                     staged    = staged,
+                     unstaged  = unstaged,
+                     untracked = untracked,
+                     ignored   = ignored)
           }
 )
+
+##' @rdname status-methods
+##' @export
+setMethod("status",
+          signature(repo = "git_repository"),
+          function(repo, staged, unstaged, untracked, ignored)
+          {
+              structure(.Call(git2r_status_list, repo, staged,
+                              unstaged, untracked, ignored),
+                        class = "git_status")
+          }
+)
+
+##' @export
+print.git_status <- function(x, ...)
+{
+    display_status <- function(title, section) {
+        cat(sprintf("%s:\n", title))
+
+        for(i in seq_len(length(section))) {
+            label <- names(section)[i]
+            label <- paste0(toupper(substr(label, 1, 1)),
+                            substr(label, 2, nchar(label)))
+            cat(sprintf("\t%-12s%s\n", paste0(label, ":"), section[[i]]))
+        }
+
+        invisible(NULL)
+    }
+
+    if (length(x$ignored)) {
+        display_status("Ignored files", x$ignored)
+        cat("\n")
+    }
+
+    if (length(x$untracked)) {
+        display_status("Untracked files", x$untracked)
+        cat("\n")
+    }
+
+    if (length(x$unstaged)) {
+        display_status("Unstaged changes", x$unstaged)
+        cat("\n")
+    }
+
+    if (length(x$staged)) {
+        display_status("Staged changes", x$staged)
+        cat("\n")
+    }
+
+    invisible(NULL)
+}

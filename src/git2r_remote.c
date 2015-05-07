@@ -42,9 +42,9 @@ SEXP git2r_remote_add(SEXP repo, SEXP name, SEXP url)
     git_repository *repository = NULL;
     git_remote *remote = NULL;
 
-    if (GIT_OK != git2r_arg_check_string(name))
+    if (git2r_arg_check_string(name))
         git2r_error(git2r_err_string_arg, __func__, "name");
-    if (GIT_OK != git2r_arg_check_string(url))
+    if (git2r_arg_check_string(url))
         git2r_error(git2r_err_string_arg, __func__, "url");
 
     if (!git_remote_is_valid_name(CHAR(STRING_ELT(name, 0))))
@@ -78,40 +78,31 @@ SEXP git2r_remote_add(SEXP repo, SEXP name, SEXP url)
  * @param name The name of the remote to fetch from
  * @param credentials The credentials for remote repository access.
  * @param msg The one line long message to be appended to the reflog
- * @param who The identity that will used to populate the reflog entry
  * @return R_NilValue
  */
 SEXP git2r_remote_fetch(
     SEXP repo,
     SEXP name,
     SEXP credentials,
-    SEXP msg,
-    SEXP who)
+    SEXP msg)
 {
     int err;
     SEXP result = R_NilValue;
     const git_transfer_progress *stats;
     git_remote *remote = NULL;
-    git_signature *signature = NULL;
     git_repository *repository = NULL;
     git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 
-    if (GIT_OK != git2r_arg_check_string(name))
+    if (git2r_arg_check_string(name))
         git2r_error(git2r_err_string_arg, __func__, "name");
-    if (GIT_OK != git2r_arg_check_credentials(credentials))
+    if (git2r_arg_check_credentials(credentials))
         git2r_error(git2r_err_credentials_arg, __func__, "credentials");
-    if (GIT_OK != git2r_arg_check_string(msg))
+    if (git2r_arg_check_string(msg))
         git2r_error(git2r_err_string_arg, __func__, "msg");
-    if (GIT_OK != git2r_arg_check_signature(who))
-        git2r_error(git2r_err_signature_arg, __func__, "who");
 
     repository = git2r_repository_open(repo);
     if (!repository)
         git2r_error(git2r_err_invalid_repository, __func__, NULL);
-
-    err = git2r_signature_from_arg(&signature, who);
-    if (GIT_OK != err)
-        goto cleanup;
 
     err = git_remote_lookup(&remote, repository, CHAR(STRING_ELT(name, 0)));
     if (GIT_OK != err)
@@ -123,7 +114,7 @@ SEXP git2r_remote_fetch(
     if (GIT_OK != err)
         goto cleanup;
 
-    err = git_remote_fetch(remote, NULL, signature, CHAR(STRING_ELT(msg, 0)));
+    err = git_remote_fetch(remote, NULL,  CHAR(STRING_ELT(msg, 0)));
     if (GIT_OK != err)
         goto cleanup;
 
@@ -132,9 +123,6 @@ SEXP git2r_remote_fetch(
     git2r_transfer_progress_init(stats, result);
 
 cleanup:
-    if (signature)
-        git_signature_free(signature);
-
     if (remote) {
         if (git_remote_connected(remote))
             git_remote_disconnect(remote);
@@ -208,7 +196,7 @@ SEXP git2r_remote_remove(SEXP repo, SEXP name)
     int err;
     git_repository *repository = NULL;
 
-    if (GIT_OK != git2r_arg_check_string(name))
+    if (git2r_arg_check_string(name))
         git2r_error(git2r_err_string_arg, __func__, "name");
 
     repository = git2r_repository_open(repo);
@@ -240,9 +228,9 @@ SEXP git2r_remote_rename(SEXP repo, SEXP oldname, SEXP newname)
     git_strarray problems = {0};
     git_repository *repository = NULL;
 
-    if (GIT_OK != git2r_arg_check_string(oldname))
+    if (git2r_arg_check_string(oldname))
         git2r_error(git2r_err_string_arg, __func__, "oldname");
-    if (GIT_OK != git2r_arg_check_string(newname))
+    if (git2r_arg_check_string(newname))
         git2r_error(git2r_err_string_arg, __func__, "newname");
 
     repository = git2r_repository_open(repo);
@@ -287,7 +275,7 @@ SEXP git2r_remote_url(SEXP repo, SEXP remote)
     git_remote *tmp_remote;
     git_repository *repository = NULL;
 
-    if (GIT_OK != git2r_arg_check_string_vec(remote))
+    if (git2r_arg_check_string_vec(remote))
         git2r_error(git2r_err_string_vec_arg, __func__, "remote");
 
     repository = git2r_repository_open(repo);

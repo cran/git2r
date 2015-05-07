@@ -14,26 +14,6 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-##' Internal function to generate checkout reflog message
-##'
-##' @param object The object to checkout
-##' @param ref_log_target The target in the reflog message
-##' in the reflog
-##' @keywords internal
-checkout_reflog_msg <- function(object, ref_log_target) {
-    ## Determine the one line long message to be appended to the reflog
-    current <- head(object@repo)
-    if (is.null(current))
-        stop("Current head is NULL")
-    if (is_commit(current)) {
-        current <- current@sha
-    } else {
-        current <- current@name
-    }
-
-    sprintf("checkout: moving from %s to %s", current, ref_log_target)
-}
-
 ##' Checkout
 ##'
 ##' Update files in the index and working tree to match the content of
@@ -118,6 +98,21 @@ setMethod("checkout",
               if (any(!is.character(branch), !identical(length(branch), 1L)))
                   stop("'branch' must be a character vector of length one")
 
+              if (identical(branch, "-")) {
+                  ## Determine previous branch name
+                  branch <- revparse_single(object, "@{-1}")@sha
+                  branch <- sapply(references(object), function(x) {
+                      ifelse(x@sha == branch, x@shorthand, NA_character_)
+                  })
+                  branch <- branch[!sapply(branch, is.na)]
+                  branch <- sapply(branches(object, "local"), function(x) {
+                      ifelse(x@name %in% branch, x@name, NA_character_)
+                  })
+                  branch <- branch[!sapply(branch, is.na)]
+                  if (any(!is.character(branch), !identical(length(branch), 1L)))
+                      stop("'branch' must be a character vector of length one")
+              }
+
               ## Check if branch exists in a local branch
               lb <- branches(object, "local")
               lb <- lb[sapply(lb, slot, "name") == branch]
@@ -139,7 +134,7 @@ setMethod("checkout",
                       commit <- lookup(object, branch_target(rb[[i]]))
                       branch <- branch_create(commit, branch)
                       branch_set_upstream(branch, rb[[i]]@name)
-                      checkout(branch, force = TRUE)
+                      checkout(branch, force = force)
                   } else {
                       if (!identical(create, TRUE))
                           stop(sprintf("'%s' did not match any branch", branch))
@@ -160,13 +155,10 @@ setMethod("checkout",
           signature(object = "git_branch"),
           function (object, force = FALSE)
           {
-              ret <- .Call(
-                  git2r_checkout_branch,
-                  object,
-                  force,
-                  checkout_reflog_msg(object, object@name),
-                  default_signature(object@repo))
-              invisible(ret)
+              ref_name <- paste0("refs/heads/", object@name)
+              .Call(git2r_checkout_tree, object@repo, ref_name, force)
+              .Call(git2r_repository_set_head, object@repo, ref_name)
+              invisible(NULL)
           }
 )
 
@@ -176,13 +168,9 @@ setMethod("checkout",
           signature(object = "git_commit"),
           function (object, force = FALSE)
           {
-              ret <- .Call(
-                  git2r_checkout_commit,
-                  object,
-                  force,
-                  checkout_reflog_msg(object, object@sha),
-                  default_signature(object@repo))
-              invisible(ret)
+              .Call(git2r_checkout_tree, object@repo, object@sha, force)
+              .Call(git2r_repository_set_head_detached, object)
+              invisible(NULL)
           }
 )
 
@@ -192,12 +180,9 @@ setMethod("checkout",
           signature(object = "git_tag"),
           function (object, force = FALSE)
           {
-              ret <- .Call(
-                  git2r_checkout_tag,
-                  object,
-                  force,
-                  checkout_reflog_msg(object, object@name),
-                  default_signature(object@repo))
-              invisible(ret)
+              .Call(git2r_checkout_tree, object@repo, object@target, force)
+              .Call(git2r_repository_set_head_detached,
+                    lookup(repo, object@target))
+              invisible(NULL)
           }
 )

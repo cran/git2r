@@ -22,7 +22,7 @@ dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
-config(repo, user.name="Repo", user.email="repo@example.org")
+config(repo, user.name="Alice", user.email="alice@example.org")
 
 ## Commit without adding changes should produce an error
 tools::assertError(commit(repo, "Test to commit"))
@@ -38,12 +38,12 @@ add(repo, "test.txt")
 commit_1 <- commit(repo, "Commit message")
 
 ## Check commit
-stopifnot(identical(commit_1@author@name, "Repo"))
-stopifnot(identical(commit_1@author@email, "repo@example.org"))
+stopifnot(identical(commit_1@author@name, "Alice"))
+stopifnot(identical(commit_1@author@email, "alice@example.org"))
 stopifnot(identical(lookup(repo, commit_1@sha), commit_1))
 stopifnot(identical(length(commits(repo)), 1L))
-stopifnot(identical(commits(repo)[[1]]@author@name, "Repo"))
-stopifnot(identical(commits(repo)[[1]]@author@email, "repo@example.org"))
+stopifnot(identical(commits(repo)[[1]]@author@name, "Alice"))
+stopifnot(identical(commits(repo)[[1]]@author@email, "alice@example.org"))
 stopifnot(identical(parents(commit_1), list()))
 
 ## Commit without adding changes should produce an error
@@ -68,6 +68,46 @@ stopifnot(identical(colnames(contributions(repo)),
 stopifnot(identical(nrow(contributions(repo)), 1L))
 stopifnot(identical(contributions(repo)$n, 2L))
 stopifnot(identical(contributions(repo, by="author", breaks="day")$n, 2L))
+
+## Add another commit with 'all' argument
+writeLines(c("Hello world!", "HELLO WORLD!", "HeLlO wOrLd!"),
+           file.path(path, "test.txt"))
+commit(repo, "Commit message 3", all = TRUE)
+
+stopifnot(identical(status(repo),
+                    structure(list(
+                        staged = structure(list(), .Names = character(0)),
+                        unstaged = structure(list(), .Names = character(0)),
+                        untracked = structure(list(), .Names = character(0))),
+                              .Names = c("staged", "unstaged", "untracked"),
+                              class = "git_status")))
+
+## Delete file and commit with 'all' argument
+file.remove(file.path(path, "test.txt"))
+commit(repo, "Commit message 4", all = TRUE)
+
+stopifnot(identical(status(repo),
+                    structure(list(
+                        staged = structure(list(), .Names = character(0)),
+                        unstaged = structure(list(), .Names = character(0)),
+                        untracked = structure(list(), .Names = character(0))),
+                              .Names = c("staged", "unstaged", "untracked"),
+                              class = "git_status")))
+
+## Check max number of commits in output
+stopifnot(identical(length(commits(repo)), 4L))
+stopifnot(identical(length(commits(repo, n = -1)), 4L))
+stopifnot(identical(length(commits(repo, n = 2)), 2L))
+tools::assertError(commits(repo, n = 2.2))
+tools::assertError(commits(repo, n = "2"))
+
+## Set working directory to path and check commits
+setwd(path)
+stopifnot(identical(length(commits()), 4L))
+stopifnot(identical(length(commits(n = -1)), 4L))
+stopifnot(identical(length(commits(n = 2)), 2L))
+tools::assertError(commits(n = 2.2))
+tools::assertError(commits(n = "2"))
 
 ## Cleanup
 unlink(path, recursive=TRUE)

@@ -1,4 +1,96 @@
-git2r 0.7
+git2r 0.10.1
+------------
+
+CHANGES
+
+* Rename 'bundle_repo' method to 'bundle_r_package'
+
+git2r 0.10.0
+------------
+
+NEW FEATURES
+
+* Added method libgit2_sha that returns the commit id of the libgit2
+  library that the bundled source code is based on.
+
+* Added the method in_repository to determine if a directory is in a
+  git repository.
+
+CHANGES
+
+* Add brief summary of the five latest commits when summarizing a
+  git_respository.
+
+* Added argument 'n' to the commits method to limit the number of
+  commits in the output.
+
+* Added the following methods with missing repository signature;
+  commits, is_shallow, is_empty, is_detached, repository and
+  status. Internally, these methods use getwd and discover_repository
+  to open a repository.
+
+* Changed configuration to raise error if the OpenSSL library is not
+  found on non-Windows systems.
+
+* Changed configuration to raise error if the iconv library is not
+  found on OSX.
+
+* Removed print of the configuration in the config method. Changed to
+  return S3 class git_config.
+
+* Removed print of the status in the status method. Changed to return
+  S3 class git_status.
+
+BUG FIXES
+
+* Use OPENSSL_INCLUDES variable to build on Solaris.
+
+* Use bundled regex library on Solaris.
+
+git2 0.9
+--------
+
+CHANGES
+
+* Single quote 'libgit2' and 'Git' in Description field
+
+git2 0.8
+--------
+
+CHANGES
+
+* Added bare argument to clone method to create a bare repository
+
+* Added force argument to push to force local revision to the remote
+  repo
+
+* Updated libgit2 source code (2a0f67f)
+
+* Internal refactoring of push
+
+NEW FEATURES
+
+* Added method rm_file to remove files
+
+* Added 'all' argument to commit method to stage modified and deleted
+  files
+
+* Added shortcut to checkout previous branch with "-" which is
+  synonymous with "@{-1}"
+
+* Added session argument to commit method to add sessionInfo to commit
+  message
+
+* Added session argument to tag method to add sessionInfo to tag
+  message
+
+* Added  method to coerce POSIXlt to S4 class git_time
+
+* Added method 'revparse_single' to find object specified by revision
+
+* Added plot method
+
+git2 0.7
 ---------
 
 CHANGES

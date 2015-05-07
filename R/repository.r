@@ -99,6 +99,7 @@ setAs(from="git_repository",
 ##' @rdname repository-methods
 ##' @docType methods
 ##' @param path A path to an existing local git repository
+##' @param ... Additional arguments to \code{repository} method.
 ##' @param discover Discover repository from path. Default is FALSE.
 ##' @return A S4 \code{\linkS4class{git_repository}} object
 ##' @keywords methods
@@ -163,15 +164,24 @@ setAs(from="git_repository",
 ##' }
 setGeneric("repository",
            signature = "path",
-           function(path,
-                    discover = FALSE)
+           function(path, ...)
            standardGeneric("repository"))
 
 ##' @rdname repository-methods
 ##' @export
 setMethod("repository",
+          signature(path = "missing"),
+          function()
+          {
+              repository(getwd(), discover = TRUE)
+          }
+)
+
+##' @rdname repository-methods
+##' @export
+setMethod("repository",
           signature(path = "character"),
-          function(path, discover)
+          function(path, discover = FALSE, ...)
           {
               ## Argument checking
               stopifnot(identical(length(path), 1L),
@@ -251,6 +261,7 @@ setMethod("init",
 ##' @docType methods
 ##' @param url The remote repository to clone
 ##' @param local_path Local directory to clone to.
+##' @param bare Create a bare repository. Default is FALSE.
 ##' @param credentials The credentials for remote repository access. Default
 ##' is NULL.
 ##' @param progress Show progress. Default is TRUE.
@@ -302,6 +313,7 @@ setGeneric("clone",
            signature = c("url", "local_path"),
            function(url,
                     local_path,
+                    bare        = FALSE,
                     credentials = NULL,
                     progress    = TRUE)
            standardGeneric("clone"))
@@ -313,18 +325,11 @@ setMethod("clone",
                     local_path = "character"),
           function(url,
                    local_path,
+                   bare,
                    credentials,
                    progress)
           {
-              ## Argument checking
-              stopifnot(is.logical(progress),
-                        identical(length(url), 1L),
-                        identical(length(local_path), 1L),
-                        identical(length(progress), 1L),
-                        nchar(url) > 0,
-                        nchar(local_path) > 0)
-
-              .Call(git2r_clone, url, local_path, credentials, progress)
+              .Call(git2r_clone, url, local_path, bare, credentials, progress)
 
               repository(local_path)
           }
@@ -400,6 +405,16 @@ setMethod("is_bare",
           }
 )
 
+##' @rdname is_bare-methods
+##' @export
+setMethod("is_bare",
+          signature(repo = "missing"),
+          function ()
+          {
+              is_bare(repository(getwd(), discover = TRUE))
+          }
+)
+
 ##' Check if HEAD of repository is detached
 ##'
 ##' @rdname is_detached-methods
@@ -441,6 +456,17 @@ setGeneric("is_detached",
            signature = "repo",
            function(repo)
            standardGeneric("is_detached"))
+
+
+##' @rdname is_detached-methods
+##' @export
+setMethod("is_detached",
+          signature(repo = "missing"),
+          function ()
+          {
+              is_detached(repository(getwd(), discover = TRUE))
+          }
+)
 
 ##' @rdname is_detached-methods
 ##' @export
@@ -485,6 +511,17 @@ setGeneric("is_empty",
            function(repo)
            standardGeneric("is_empty"))
 
+
+##' @rdname is_empty-methods
+##' @export
+setMethod("is_empty",
+          signature(repo = "missing"),
+          function ()
+          {
+              is_empty(repository(getwd(), discover = TRUE))
+          }
+)
+
 ##' @rdname is_empty-methods
 ##' @export
 setMethod("is_empty",
@@ -492,6 +529,58 @@ setMethod("is_empty",
           function (repo)
           {
               .Call(git2r_repository_is_empty, repo)
+          }
+)
+
+##' Determine if a directory is in a git repository
+##'
+##' The lookup start from path and walk across parent directories if
+##' nothing has been found.
+##' @rdname in_repository-methods
+##' @docType methods
+##' @param path The path to the directory. The working directory is
+##' used if path is missing.
+##' @return TRUE if directory is in a git repository else FALSE
+##' @keywords methods
+##' @examples
+##' \dontrun{
+##' ## Initialize a temporary repository
+##' path <- tempfile(pattern="git2r-")
+##' dir.create(path)
+##' repo <- init(path)
+##'
+##' ## Create a user
+##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##'
+##' ## Check if path is in a git repository
+##' in_repository(path)
+##'
+##' ## Check if working directory is in a git repository
+##' setwd(path)
+##' in_repository()
+##' }
+setGeneric("in_repository",
+           signature = "path",
+           function(path)
+           standardGeneric("in_repository"))
+
+##' @rdname in_repository-methods
+##' @export
+setMethod("in_repository",
+          signature(path = "missing"),
+          function ()
+          {
+              !is.null(discover_repository(getwd()))
+          }
+)
+
+##' @rdname in_repository-methods
+##' @export
+setMethod("in_repository",
+          signature(path = "character"),
+          function (path)
+          {
+              !is.null(discover_repository(path))
           }
 )
 
@@ -545,6 +634,17 @@ setGeneric("is_shallow",
            signature = "repo",
            function(repo)
            standardGeneric("is_shallow"))
+
+
+##' @rdname is_shallow-methods
+##' @export
+setMethod("is_shallow",
+          signature(repo = "missing"),
+          function ()
+          {
+              is_shallow(repository(getwd(), discover = TRUE))
+          }
+)
 
 ##' @rdname is_shallow-methods
 ##' @export
@@ -770,12 +870,14 @@ setMethod("summary",
               show(object)
               cat("\n")
 
-              n_branches <- sum(!is.na(unique(sapply(branches(object), branch_target))))
+              n_branches <- sum(!is.na(unique(sapply(branches(object),
+                                                     branch_target))))
               n_tags <- sum(!is.na(unique(sapply(tags(object), slot, "sha"))))
 
               work <- commits(object)
               n_commits <- length(work)
-              n_authors <- length(unique(sapply(lapply(work, slot, "author"), slot, "name")))
+              n_authors <- length(unique(sapply(lapply(work, slot, "author"),
+                                                slot, "name")))
 
               s <- .Call(git2r_status_list, object, TRUE, TRUE, TRUE, TRUE)
               n_ignored <- length(s$ignored)
@@ -798,6 +900,11 @@ setMethod("summary",
                             "Staged files:    %", n, "i\n")
               cat(sprintf(fmt, n_branches, n_tags, n_commits, n_authors,
                           n_ignored, n_untracked, n_unstaged, n_staged))
+
+              cat("\nLatest commits:\n")
+              lapply(commits(object, n = 5), show)
+
+              invisible(NULL)
           }
 )
 

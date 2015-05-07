@@ -16,35 +16,23 @@
 
 library(git2r)
 
-##
 ## Create a directory in tempdir
-##
 path <- tempfile(pattern="git2r-")
 dir.create(path)
 
-##
 ## is_bare: "Invalid repository"
-##
 tools::assertError(is_bare(new("git_repository")))
 
-##
 ## is_empty: "Invalid repository"
-##
 tools::assertError(is_empty(new("git_repository")))
 
-##
 ## Check that open an invalid repository fails
-##
 tools::assertError(repository(path))
 
-##
 ## Initialize a repository
-##
 repo <- init(path)
 
-##
 ## Check the state of the repository
-##
 stopifnot(validObject(repo))
 stopifnot(identical(is_bare(repo), FALSE))
 stopifnot(identical(is_empty(repo), TRUE))
@@ -54,21 +42,33 @@ stopifnot(identical(commits(repo), list()))
 stopifnot(identical(head(repo), NULL))
 
 # check that we can find repository from a path
-wd=workdir(repo)
+wd <- workdir(repo)
 writeLines('test file', con=file.path(wd, 'myfile.txt'))
 stopifnot(identical(discover_repository(file.path(wd, 'myfile.txt')),
                     paste0(wd, '.git', .Platform$file.sep)))
 stopifnot(identical(discover_repository(file.path(wd, 'doesntexist.txt')),
                     NULL))
 
-##
 ## Check that lookup with a sha of less than 4 characters or more than
 ## 40 characters fail.
-##
-tools::assertError(lookup(repo, paste0(rep("a", 3), collapse="")))
-tools::assertError(lookup(repo, paste0(rep("a", 41), collapse="")))
+tools::assertError(lookup(repo, paste0(rep("a", 3), collapse = "")))
+tools::assertError(lookup(repo, paste0(rep("a", 41), collapse = "")))
 
-##
+## Check in_repository
+stopifnot(identical(in_repository(path), TRUE))
+
+## Check:
+## - in_repository method with missing path argument
+## - repository method with missing path argument
+## - is_empty method with missing repo argument
+## - is_shallow method with missing repo argument
+wd <- setwd(path)
+stopifnot(identical(in_repository(), TRUE))
+stopifnot(identical(workdir(repository(path)), workdir(repository())))
+stopifnot(identical(is_empty(), TRUE))
+stopifnot(identical(is_shallow(), FALSE))
+if (!is.null(wd))
+    setwd(wd)
+
 ## Cleanup
-##
 unlink(path, recursive=TRUE)

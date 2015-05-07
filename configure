@@ -3627,7 +3627,9 @@ fi
 
 # Check for OpenSSL
 have_ssl=no
-OLD_LIBS=${LIBS}
+if test "x${OPENSSL_INCLUDES}" = x; then :; else
+        CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_library_init" >&5
 $as_echo_n "checking for library containing SSL_library_init... " >&6; }
 if ${ac_cv_search_SSL_library_init+:} false; then :
@@ -3747,10 +3749,6 @@ fi
 
 # Specify sha1 implementation
 if test "x${have_crypto}" = xyes; then
-        if test "x${OPENSSL_INCLUDES}" != x; then
-                CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
-        fi
-
         CPPFLAGS="${CPPFLAGS} -DGIT_SSL"
 
         case "${host_os}" in
@@ -3762,18 +3760,10 @@ if test "x${have_crypto}" = xyes; then
           ;;
         esac
 else
-        LIBS=${OLD_LIBS}
-        GIT2R_SRC_HASH_GENERIC=libgit2/hash/hash_generic.o
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
-  -----------------------------------------------
-   Unable to find OpenSSL on this system.
-   Building a version without support for HTTPS.
-  -----------------------------------------------" >&5
-$as_echo "$as_me: WARNING:
-  -----------------------------------------------
-   Unable to find OpenSSL on this system.
-   Building a version without support for HTTPS.
-  -----------------------------------------------" >&2;}
+        { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "OpenSSL library required
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 # Check for LibSSH2
@@ -3914,16 +3904,10 @@ fi
         if test "x${have_iconv}" = xyes; then
                 CPPFLAGS="${CPPFLAGS} -DGIT_USE_ICONV"
         else
-                { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
-  ---------------------------------------------
-   Unable to find iconv on this system.
-   Building a version without support for iconv.
-  ---------------------------------------------" >&5
-$as_echo "$as_me: WARNING:
-  ---------------------------------------------
-   Unable to find iconv on this system.
-   Building a version without support for iconv.
-  ---------------------------------------------" >&2;}
+                { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "iconv library required
+See \`config.log' for more details" "$LINENO" 5; }
         fi
     ;;
 esac

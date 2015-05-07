@@ -24,6 +24,7 @@
 #include "git2r_commit.h"
 #include "git2r_error.h"
 #include "git2r_repository.h"
+#include "git2r_signature.h"
 #include "git2r_tag.h"
 #include "git2r_tree.h"
 #include "buffer.h"
@@ -48,7 +49,7 @@ git_repository* git2r_repository_open(SEXP repo)
         return NULL;
 
     path = GET_SLOT(repo, Rf_install("path"));
-    if (GIT_OK != git2r_arg_check_string(path))
+    if (git2r_arg_check_string(path))
         return NULL;
 
     if (git_repository_open(&repository, CHAR(STRING_ELT(path, 0))) < 0)
@@ -239,9 +240,9 @@ SEXP git2r_repository_init(SEXP path, SEXP bare)
     int err;
     git_repository *repository = NULL;
 
-    if (GIT_OK != git2r_arg_check_string(path))
+    if (git2r_arg_check_string(path))
         git2r_error(git2r_err_string_arg, __func__, "path");
-    if (GIT_OK != git2r_arg_check_logical(bare))
+    if (git2r_arg_check_logical(bare))
         git2r_error(git2r_err_logical_arg, __func__, "bare");
 
     err = git_repository_init(&repository,
@@ -390,7 +391,7 @@ SEXP git2r_repository_can_open(SEXP path)
     int can_open;
     git_repository *repository = NULL;
 
-    if (GIT_OK != git2r_arg_check_string(path))
+    if (git2r_arg_check_string(path))
         git2r_error(git2r_err_string_arg, __func__, "path");
 
     can_open = git_repository_open(&repository, CHAR(STRING_ELT(path, 0)));
@@ -405,6 +406,83 @@ SEXP git2r_repository_can_open(SEXP path)
     UNPROTECT(1);
 
     return result;
+}
+
+/**
+ * Make the repository HEAD point to the specified reference.
+ *
+ * @param repo S4 class git_repository
+ * @param ref_name Canonical name of the reference the HEAD should point at
+ * @return R_NilValue
+ */
+SEXP git2r_repository_set_head(SEXP repo, SEXP ref_name)
+{
+    int err;
+    git_repository *repository = NULL;
+
+    if (git2r_arg_check_string(ref_name))
+        git2r_error(git2r_err_string_arg, __func__, "ref_name");
+
+    repository = git2r_repository_open(repo);
+    if (!repository)
+        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+
+    err = git_repository_set_head(repository, CHAR(STRING_ELT(ref_name, 0)));
+
+    if (repository)
+        git_repository_free(repository);
+
+    if (GIT_OK != err)
+        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+
+    return R_NilValue;
+}
+
+/**
+ * Make the repository HEAD directly point to the commit.
+ *
+ * @param commit S4 class git_commit
+ * @return R_NilValue
+ */
+SEXP git2r_repository_set_head_detached(SEXP commit)
+{
+    int err;
+    SEXP sha;
+    git_oid oid;
+    git_commit *treeish = NULL;
+    git_repository *repository = NULL;
+
+    if (git2r_arg_check_commit(commit))
+        git2r_error(git2r_err_commit_arg, __func__, "commit");
+
+    repository = git2r_repository_open(GET_SLOT(commit, Rf_install("repo")));
+    if (!repository)
+        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+
+    sha = GET_SLOT(commit, Rf_install("sha"));
+    err = git_oid_fromstr(&oid, CHAR(STRING_ELT(sha, 0)));
+    if (GIT_OK != err)
+        goto cleanup;
+
+    err = git_commit_lookup(&treeish, repository, &oid);
+    if (GIT_OK != err)
+        goto cleanup;
+
+    err = git_repository_set_head_detached(
+        repository,
+        git_commit_id(treeish));
+
+cleanup:
+    if (treeish)
+        git_commit_free(treeish);
+
+    if (repository)
+        git_repository_free(repository);
+
+    if (GIT_OK != err)
+        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+
+    return R_NilValue;
 }
 
 /**
@@ -449,7 +527,7 @@ SEXP git2r_repository_discover(SEXP path)
     SEXP result = R_NilValue;
     git_buf buf = GIT_BUF_INIT;
 
-    if (GIT_OK != git2r_arg_check_string(path))
+    if (git2r_arg_check_string(path))
         git2r_error(git2r_err_string_arg, __func__, "path");
 
     /* note that across_fs (arg #3) is set to 0 so this will stop when

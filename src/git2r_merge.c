@@ -55,9 +55,9 @@ SEXP git2r_merge_base(SEXP one, SEXP two)
     git_commit *commit = NULL;
     git_repository *repository = NULL;
 
-    if (GIT_OK != git2r_arg_check_commit(one))
+    if (git2r_arg_check_commit(one))
         git2r_error(git2r_err_commit_arg, __func__, "one");
-    if (GIT_OK != git2r_arg_check_commit(two))
+    if (git2r_arg_check_commit(two))
         git2r_error(git2r_err_commit_arg, __func__, "two");
 
     repo = GET_SLOT(one, Rf_install("repo"));
@@ -112,15 +112,13 @@ cleanup:
  * @param merge_head The merge head to fast-forward merge
  * @param repository The repository
  * @param log_message First part of the one line long message in the reflog
- * @param merger Who is performing the merge
  * @return 0 on success, or error code
  */
 static int git2r_fast_forward_merge(
     SEXP merge_result,
     const git_annotated_commit *merge_head,
     git_repository *repository,
-    const char *log_message,
-    git_signature *merger)
+    const char *log_message)
 {
     int err;
     const git_oid *oid;
@@ -161,7 +159,6 @@ static int git2r_fast_forward_merge(
             "HEAD",
             git_commit_id(commit),
             0, /* force */
-            merger,
             buf.ptr);
     } else {
         git_reference *target_ref = NULL;
@@ -170,7 +167,6 @@ static int git2r_fast_forward_merge(
             &target_ref,
             reference,
             git_commit_id(commit),
-            merger,
             buf.ptr);
 
         if (target_ref)
@@ -312,7 +308,7 @@ static int git2r_merge(
     merge_opts.rename_threshold = 50;
     merge_opts.target_limit = 200;
 
-    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+    checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
 
     err = git_merge_analysis(
         &merge_analysis,
@@ -352,8 +348,7 @@ static int git2r_merge(
                 merge_result,
                 merge_heads[0],
                 repository,
-                name,
-                merger);
+                name);
         } else if (merge_analysis & GIT_MERGE_ANALYSIS_NORMAL) {
             err = git2r_normal_merge(
                 merge_result,
@@ -395,8 +390,7 @@ static int git2r_merge(
                 merge_result,
                 merge_heads[0],
                 repository,
-                name,
-                merger);
+                name);
         } else {
             giterr_set_str(GITERR_NONE, "Unable to perform Fast-Forward merge.");
             return GIT_ERROR;
@@ -453,11 +447,11 @@ SEXP git2r_merge_branch(SEXP branch, SEXP merger, SEXP commit_on_success)
     git_repository *repository = NULL;
     git_signature *who = NULL;
 
-    if (GIT_OK != git2r_arg_check_branch(branch))
+    if (git2r_arg_check_branch(branch))
         git2r_error(git2r_err_branch_arg, __func__, "branch");
-    if (GIT_OK != git2r_arg_check_logical(commit_on_success))
+    if (git2r_arg_check_logical(commit_on_success))
         git2r_error(git2r_err_logical_arg, __func__, "commit_on_success");
-    if (GIT_OK != git2r_arg_check_signature(merger))
+    if (git2r_arg_check_signature(merger))
         git2r_error(git2r_err_signature_arg, __func__, "merger");
 
     err = git2r_signature_from_arg(&who, merger);
@@ -599,9 +593,9 @@ SEXP git2r_merge_fetch_heads(SEXP fetch_heads, SEXP merger)
     git_repository *repository = NULL;
     git_signature *who = NULL;
 
-    if (GIT_OK != git2r_arg_check_fetch_heads(fetch_heads))
+    if (git2r_arg_check_fetch_heads(fetch_heads))
         git2r_error(git2r_err_fetch_heads_arg, __func__, "fetch_heads");
-    if (GIT_OK != git2r_arg_check_signature(merger))
+    if (git2r_arg_check_signature(merger))
         git2r_error(git2r_err_signature_arg, __func__, "merger");
 
     err = git2r_signature_from_arg(&who, merger);

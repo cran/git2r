@@ -70,6 +70,10 @@ setMethod("ahead_behind",
 ##' @docType methods
 ##' @param repo The repository \code{object}.
 ##' @param message The commit message.
+##' @param all Stage modified and deleted files. Files not added to
+##' Git are not affected.
+##' @param session Add sessionInfo to commit message. Default is
+##' FALSE.
 ##' @param reference Name of the reference that will be updated to
 ##' point to this commit.
 ##' @param author Signature with author and author time of commit.
@@ -95,9 +99,11 @@ setMethod("ahead_behind",
 setGeneric("commit",
            signature = "repo",
            function(repo,
-                    message = NULL,
+                    message   = NULL,
+                    all       = FALSE,
+                    session   = FALSE,
                     reference = "HEAD",
-                    author = default_signature(repo),
+                    author    = default_signature(repo),
                     committer = default_signature(repo))
            standardGeneric("commit"))
 
@@ -107,16 +113,46 @@ setMethod("commit",
           signature(repo = "git_repository"),
           function (repo,
                     message,
+                    all,
+                    session,
                     reference,
                     author,
                     committer)
           {
               ## Argument checking
               stopifnot(is.character(message),
-                        identical(length(message), 1L))
+                        identical(length(message), 1L),
+                        is.logical(all),
+                        identical(length(all), 1L),
+                        is.logical(session),
+                        identical(length(session), 1L))
 
               if (!nchar(message[1]))
                   stop("Aborting commit due to empty commit message.")
+
+              if (all) {
+                  s <- status(repo,
+                              unstaged  = TRUE,
+                              staged    = FALSE,
+                              untracked = FALSE,
+                              ignored   = FALSE)
+
+                  ## Stage modified files
+                  lapply(s$unstaged$modified, function(x) {
+                      add(repo, x)
+                  })
+
+                  ## Stage deleted files
+                  lapply(s$unstaged$deleted, function(x) {
+                      .Call(git2r_index_remove_bypath, repo, x)
+                  })
+              }
+
+              if (session) {
+                  message <- paste0(message, "\n\nsessionInfo:\n",
+                                    paste0(capture.output(sessionInfo()),
+                                           collapse="\n"))
+              }
 
               .Call(git2r_commit, repo, message, author, committer)
           }
@@ -127,6 +163,7 @@ setMethod("commit",
 ##' @rdname commits-methods
 ##' @docType methods
 ##' @param repo The repository \code{object}.
+##' @param ... Additional arguments to commits.
 ##' @param topological Sort the commits in topological order (parents
 ##' before children); can be combined with time sorting. Default is
 ##' TRUE.
@@ -134,6 +171,8 @@ setMethod("commit",
 ##' topological sorting. Default is TRUE.
 ##' @param reverse Sort the commits in reverse order; can be combined
 ##' with topological and/or time sorting. Default is FALSE.
+##' @param n The upper limit of the number of commits to output. The
+##' defualt is NULL for unlimited number of commits.
 ##' @return list of commits in repository
 ##' @keywords methods
 ##' @examples
@@ -172,22 +211,26 @@ setMethod("commit",
 ##' }
 setGeneric("commits",
            signature = "repo",
-           function(repo,
-                    topological = TRUE,
-                    time        = TRUE,
-                    reverse     = FALSE)
+           function(repo, ...)
            standardGeneric("commits"))
 
 ##' @rdname commits-methods
 ##' @export
 setMethod("commits",
-          signature(repo = "character"),
-          function(repo, topological, time, reverse)
+          signature(repo = "missing"),
+          function(repo,
+                   topological = TRUE,
+                   time        = TRUE,
+                   reverse     = FALSE,
+                   n           = NULL,
+                   ...)
           {
-              commits(repository(repo),
+              commits(repository(getwd(), discover = TRUE),
                       topological = topological,
-                      time = time,
-                      reverse = reverse)
+                      time        = time,
+                      reverse     = reverse,
+                      n           = n,
+                      ...)
           }
 )
 
@@ -196,13 +239,27 @@ setMethod("commits",
 ##' @export
 setMethod("commits",
           signature(repo = "git_repository"),
-          function(repo, topological, time, reverse)
+          function(repo,
+                   topological = TRUE,
+                   time        = TRUE,
+                   reverse     = FALSE,
+                   n           = NULL,
+                   ...)
           {
-              .Call(git2r_revwalk_list,
-                    repo,
-                    topological,
-                    time,
-                    reverse)
+              ## Check limit in number of commits
+              if (is.null(n)) {
+                  n <- -1L
+              } else if (is.numeric(n)) {
+                  if (!identical(length(n), 1L))
+                      stop("'n' must be integer")
+                  if (abs(n - round(n)) >= .Machine$double.eps^0.5)
+                      stop("'n' must be integer")
+                  n <- as.integer(n)
+              } else {
+                  stop("'n' must be integer")
+              }
+
+              .Call(git2r_revwalk_list, repo, topological, time, reverse, n)
           }
 )
 
