@@ -43,16 +43,16 @@ SEXP git2r_checkout_tree(SEXP repo, SEXP revision, SEXP force)
     git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
 
     if (git2r_arg_check_string(revision))
-        git2r_error(git2r_err_string_arg, __func__, "revision");
+        git2r_error(__func__, NULL, "'revision'", git2r_err_string_arg);
     if (git2r_arg_check_logical(force))
-        git2r_error(git2r_err_logical_arg, __func__, "force");
+        git2r_error(__func__, NULL, "'force'", git2r_err_logical_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_revparse_single(&treeish, repository, CHAR(STRING_ELT(revision, 0)));
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     switch (git_object_type(treeish)) {
@@ -66,7 +66,7 @@ SEXP git2r_checkout_tree(SEXP repo, SEXP revision, SEXP force)
         err = GIT_ERROR;
         break;
     }
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     if (LOGICAL(force)[0])
@@ -83,8 +83,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }

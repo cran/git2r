@@ -37,7 +37,8 @@ stopifnot(validObject(repo))
 stopifnot(identical(is_bare(repo), FALSE))
 stopifnot(identical(is_empty(repo), TRUE))
 stopifnot(identical(is_shallow(repo), FALSE))
-stopifnot(identical(branches(repo), list()))
+stopifnot(identical(branches(repo), structure(list(), .Names = character(0))))
+stopifnot(identical(references(repo), structure(list(), .Names = character(0))))
 stopifnot(identical(commits(repo), list()))
 stopifnot(identical(head(repo), NULL))
 
@@ -60,11 +61,13 @@ stopifnot(identical(in_repository(path), TRUE))
 ## Check:
 ## - in_repository method with missing path argument
 ## - repository method with missing path argument
+## - workdir method with missing path argument
 ## - is_empty method with missing repo argument
 ## - is_shallow method with missing repo argument
 wd <- setwd(path)
 stopifnot(identical(in_repository(), TRUE))
 stopifnot(identical(workdir(repository(path)), workdir(repository())))
+stopifnot(identical(workdir(repository(path)), workdir()))
 stopifnot(identical(is_empty(), TRUE))
 stopifnot(identical(is_shallow(), FALSE))
 if (!is.null(wd))

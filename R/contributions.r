@@ -19,7 +19,11 @@
 ##' See contributions to a Git repo
 ##' @rdname contributions-methods
 ##' @docType methods
-##' @param repo The repository.
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @param breaks Default is \code{month}. Change to year, quarter,
 ##' week or day as necessary.
 ##' @param by Contributions by "commits" or "author". Default is "commits".
@@ -92,10 +96,11 @@ setGeneric("contributions",
 ##' @export
 setMethod("contributions",
           signature(repo = "missing"),
-          function (repo, breaks, by)
+          function(breaks, by)
           {
-              ## Try current working directory
-              contributions(getwd(), breaks = breaks, by = by)
+              callGeneric(repo   = lookup_repository(),
+                          breaks = breaks,
+                          by     = by)
           }
 )
 
@@ -103,7 +108,7 @@ setMethod("contributions",
 ##' @export
 setMethod("contributions",
           signature(repo = "character"),
-          function (repo, breaks, by)
+          function(repo, breaks, by)
           {
               contributions(repository(repo), breaks = breaks, by = by)
           }
@@ -113,7 +118,7 @@ setMethod("contributions",
 ##' @export
 setMethod("contributions",
           signature(repo = "git_repository"),
-          function (repo, breaks, by)
+          function(repo, breaks, by)
           {
               breaks <- match.arg(breaks)
               by <- match.arg(by)

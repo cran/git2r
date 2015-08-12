@@ -11,8 +11,7 @@
 contributions(repo, breaks = c("month", "year", "quarter", "week", "day"),
   by = c("commits", "author"))
 
-\S4method{contributions}{missing}(repo, breaks = c("month", "year", "quarter",
-  "week", "day"), by = c("commits", "author"))
+\S4method{contributions}{missing}(breaks, by)
 
 \S4method{contributions}{character}(repo, breaks = c("month", "year",
   "quarter", "week", "day"), by = c("commits", "author"))
@@ -21,7 +20,11 @@ contributions(repo, breaks = c("month", "year", "quarter", "week", "day"),
   "quarter", "week", "day"), by = c("commits", "author"))
 }
 \arguments{
-\item{repo}{The repository.}
+\item{repo}{The repository \code{object}
+\code{\linkS4class{git_repository}}. If the \code{repo} argument
+is missing, the repository is searched for with
+\code{\link{discover_repository}} in the current working
+directory.}
 
 \item{breaks}{Default is \code{month}. Change to year, quarter,
 week or day as necessary.}

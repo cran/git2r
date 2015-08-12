@@ -173,7 +173,7 @@ setMethod("repository",
           signature(path = "missing"),
           function()
           {
-              repository(getwd(), discover = TRUE)
+              callGeneric(path = getwd(), discover = TRUE)
           }
 )
 
@@ -262,6 +262,8 @@ setMethod("init",
 ##' @param url The remote repository to clone
 ##' @param local_path Local directory to clone to.
 ##' @param bare Create a bare repository. Default is FALSE.
+##' @param branch The name of the branch to checkout. Default is NULL
+##' which means to use the remote's default branch.
 ##' @param credentials The credentials for remote repository access. Default
 ##' is NULL.
 ##' @param progress Show progress. Default is TRUE.
@@ -314,6 +316,7 @@ setGeneric("clone",
            function(url,
                     local_path,
                     bare        = FALSE,
+                    branch      = NULL,
                     credentials = NULL,
                     progress    = TRUE)
            standardGeneric("clone"))
@@ -326,10 +329,12 @@ setMethod("clone",
           function(url,
                    local_path,
                    bare,
+                   branch,
                    credentials,
                    progress)
           {
-              .Call(git2r_clone, url, local_path, bare, credentials, progress)
+              .Call(git2r_clone, url, local_path, bare,
+                    branch, credentials, progress)
 
               repository(local_path)
           }
@@ -362,7 +367,7 @@ setMethod("clone",
 ##' }
 setMethod("head",
           signature(x = "git_repository"),
-          function (x)
+          function(x)
           {
               .Call(git2r_repository_head, x)
           }
@@ -372,7 +377,11 @@ setMethod("head",
 ##'
 ##' @rdname is_bare-methods
 ##' @docType methods
-##' @param repo The repository to check if it's bare
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}} to check if it's bare. If the
+##' \code{repo} argument is missing, the repository is searched for
+##' with \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return TRUE if bare repository, else FALSE
 ##' @keywords methods
 ##' @seealso \link{init}
@@ -399,7 +408,7 @@ setGeneric("is_bare",
 ##' @export
 setMethod("is_bare",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_repository_is_bare, repo)
           }
@@ -409,9 +418,9 @@ setMethod("is_bare",
 ##' @export
 setMethod("is_bare",
           signature(repo = "missing"),
-          function ()
+          function()
           {
-              is_bare(repository(getwd(), discover = TRUE))
+              callGeneric(repo = lookup_repository())
           }
 )
 
@@ -420,6 +429,10 @@ setMethod("is_bare",
 ##' @rdname is_detached-methods
 ##' @docType methods
 ##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return TRUE if repository HEAD is detached, else FALSE
 ##' @keywords methods
 ##' @examples
@@ -462,9 +475,9 @@ setGeneric("is_detached",
 ##' @export
 setMethod("is_detached",
           signature(repo = "missing"),
-          function ()
+          function()
           {
-              is_detached(repository(getwd(), discover = TRUE))
+              callGeneric(repo = lookup_repository())
           }
 )
 
@@ -472,7 +485,7 @@ setMethod("is_detached",
 ##' @export
 setMethod("is_detached",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_repository_head_detached, repo)
           }
@@ -482,7 +495,11 @@ setMethod("is_detached",
 ##'
 ##' @rdname is_empty-methods
 ##' @docType methods
-##' @param repo The repository to check if it's empty
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}} to check if it's empty. If the
+##' \code{repo} argument is missing, the repository is searched for
+##' with \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return TRUE if empty else FALSE
 ##' @keywords methods
 ##' @examples
@@ -516,9 +533,9 @@ setGeneric("is_empty",
 ##' @export
 setMethod("is_empty",
           signature(repo = "missing"),
-          function ()
+          function()
           {
-              is_empty(repository(getwd(), discover = TRUE))
+              callGeneric(repo = lookup_repository())
           }
 )
 
@@ -526,7 +543,7 @@ setMethod("is_empty",
 ##' @export
 setMethod("is_empty",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_repository_is_empty, repo)
           }
@@ -568,9 +585,9 @@ setGeneric("in_repository",
 ##' @export
 setMethod("in_repository",
           signature(path = "missing"),
-          function ()
+          function()
           {
-              !is.null(discover_repository(getwd()))
+              callGeneric(path = getwd())
           }
 )
 
@@ -578,7 +595,7 @@ setMethod("in_repository",
 ##' @export
 setMethod("in_repository",
           signature(path = "character"),
-          function (path)
+          function(path)
           {
               !is.null(discover_repository(path))
           }
@@ -588,7 +605,11 @@ setMethod("in_repository",
 ##'
 ##' @rdname is_shallow-methods
 ##' @docType methods
-##' @param repo The repository
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return TRUE if shallow clone, else FALSE
 ##' @keywords methods
 ##' @examples
@@ -640,9 +661,9 @@ setGeneric("is_shallow",
 ##' @export
 setMethod("is_shallow",
           signature(repo = "missing"),
-          function ()
+          function()
           {
-              is_shallow(repository(getwd(), discover = TRUE))
+              callGeneric(repo = lookup_repository())
           }
 )
 
@@ -650,7 +671,7 @@ setMethod("is_shallow",
 ##' @export
 setMethod("is_shallow",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_repository_is_shallow, repo)
           }
@@ -718,7 +739,7 @@ setGeneric("lookup",
 setMethod("lookup",
           signature(repo = "git_repository",
                     sha  = "character"),
-          function (repo, sha)
+          function(repo, sha)
           {
               .Call(git2r_object_lookup, repo, sha)
           }
@@ -760,7 +781,7 @@ setGeneric("default_signature",
 ##' @export
 setMethod("default_signature",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_signature_default, repo)
           }
@@ -797,27 +818,36 @@ setMethod("show",
           signature(object = "git_repository"),
           function(object)
           {
-              lapply(remotes(object), function(remote) {
-                  cat(sprintf("Remote:   @ %s (%s)\n",
-                              remote,
-                              remote_url(object, remote)))
-              })
-
               if (any(is_empty(object), is.null(head(object)))) {
                   cat(sprintf("Local:    %s\n", workdir(object)))
                   cat("Head:     nothing commited (yet)\n")
-              } else if (is_detached(object)) {
-                  cat(sprintf("Local:    (detached) %s\n", workdir(object)))
               } else {
-                  cat(sprintf("Local:    %s %s\n",
-                              head(object)@name,
-                              workdir(object)))
+                  if (is_detached(object)) {
+                      cat(sprintf("Local:    (detached) %s\n", workdir(object)))
 
-                  commit <- lookup(object, branch_target(head(object)))
+                      h <- git2r::head(object)
+                  } else {
+                      cat(sprintf("Local:    %s %s\n",
+                                  head(object)@name,
+                                  workdir(object)))
+
+                      h <- head(object)
+                      u <- branch_get_upstream(h)
+                      if (!is.null(u)) {
+                          rn <- branch_remote_name(u)
+                          cat(sprintf("Remote:   %s @ %s (%s)\n",
+                                      substr(u@name, nchar(rn) + 2, nchar(u@name)),
+                                      rn,
+                                      branch_remote_url(u)))
+                      }
+
+                      h <- lookup(object, branch_target(head(object)))
+                  }
+
                   cat(sprintf("Head:     [%s] %s: %s\n",
-                              substring(commit@sha, 1, 7),
-                              substring(as(commit@author@when, "character"), 1, 10),
-                              commit@summary))
+                              substring(h@sha, 1, 7),
+                              substring(as(h@author@when, "character"), 1, 10),
+                              h@summary))
               }
           }
 )
@@ -885,21 +915,26 @@ setMethod("summary",
               n_unstaged <- length(s$unstaged)
               n_staged <- length(s$staged)
 
+              n_stashes <- length(stash_list(object))
+
               ## Determine max characters needed to display numbers
               n <- max(sapply(c(n_branches, n_tags, n_commits, n_authors,
-                                n_ignored, n_untracked, n_unstaged, n_staged),
+                                n_stashes, n_ignored, n_untracked,
+                                n_unstaged, n_staged),
                               nchar))
 
               fmt <- paste0("Branches:        %", n, "i\n",
                             "Tags:            %", n, "i\n",
                             "Commits:         %", n, "i\n",
                             "Contributors:    %", n, "i\n",
+                            "Stashes:         %", n, "i\n",
                             "Ignored files:   %", n, "i\n",
                             "Untracked files: %", n, "i\n",
                             "Unstaged files:  %", n, "i\n",
                             "Staged files:    %", n, "i\n")
               cat(sprintf(fmt, n_branches, n_tags, n_commits, n_authors,
-                          n_ignored, n_untracked, n_unstaged, n_staged))
+                          n_stashes, n_ignored, n_untracked, n_unstaged,
+                          n_staged))
 
               cat("\nLatest commits:\n")
               lapply(commits(object, n = 5), show)
@@ -912,7 +947,11 @@ setMethod("summary",
 ##'
 ##' @rdname workdir-methods
 ##' @docType methods
-##' @param repo The repository \code{object}.
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return Character vector with the path of the workdir. If the
 ##' repository is bare, \code{NULL} will be returned.
 ##' @keywords methods
@@ -936,8 +975,18 @@ setGeneric("workdir",
 ##' @rdname workdir-methods
 ##' @export
 setMethod("workdir",
+          signature(repo = "missing"),
+          function()
+          {
+              callGeneric(repo = lookup_repository())
+          }
+)
+
+##' @rdname workdir-methods
+##' @export
+setMethod("workdir",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_repository_workdir, repo)
           }
@@ -985,8 +1034,22 @@ setGeneric("discover_repository",
 ##' @export
 setMethod("discover_repository",
           signature(path = "character"),
-          function (path)
+          function(path)
           {
               .Call(git2r_repository_discover, path)
           }
 )
+
+##' Lookup repository for methods with missing repo argument
+##'
+##' @return S4 class git_repository
+##' @keywords internal
+lookup_repository <- function()
+{
+    ## Try current working directory
+    repo <- discover_repository(getwd())
+    if (is.null(repo))
+        stop("The working directory is not in a git repository")
+
+    repository(repo)
+}

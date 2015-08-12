@@ -84,14 +84,14 @@ SEXP git2r_reflog_list(SEXP repo, SEXP ref)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_string(ref))
-        git2r_error(git2r_err_string_arg, __func__, "ref");
+        git2r_error(__func__, NULL, "'ref'", git2r_err_string_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_reflog_read(&reflog, repository, CHAR(STRING_ELT(ref, 0)));
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     n = git_reflog_entrycount(reflog);
@@ -119,8 +119,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }

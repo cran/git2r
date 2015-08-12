@@ -23,6 +23,8 @@
 ##' be relative to the repository's working folder. Only non-ignored
 ##' files are added. If path is a directory, files in sub-folders are
 ##' added (if non-ignored)
+##' @param ... Additional arguments to the method
+##' @param force Add ignored files. Default is FALSE.
 ##' @return invisible(NULL)
 ##' @keywords methods
 ##' @include S4_classes.r
@@ -48,7 +50,7 @@
 ##'
 setGeneric("add",
            signature = c("repo", "path"),
-           function(repo, path)
+           function(repo, path, ...)
            standardGeneric("add"))
 
 ##' @rdname add-methods
@@ -56,9 +58,9 @@ setGeneric("add",
 setMethod("add",
           signature(repo = "git_repository",
                     path = "character"),
-          function (repo, path)
+          function(repo, path, force = FALSE)
           {
-              .Call(git2r_index_add_all, repo, path)
+              .Call(git2r_index_add_all, repo, path, force)
               invisible(NULL)
           }
 )
@@ -108,7 +110,7 @@ setGeneric("rm_file",
 setMethod("rm_file",
           signature(repo = "git_repository",
                     path = "character"),
-          function (repo, path)
+          function(repo, path)
           {
               if (length(path)) {
                   ## Check that files exists and are known to Git
@@ -141,7 +143,7 @@ setMethod("rm_file",
 
                   ## Remove and stage files
                   lapply(path, function(x) {
-                      file.remove(paste0(workdir(repo), path))
+                      file.remove(paste0(workdir(repo), x))
                       .Call(git2r_index_remove_bypath, repo, x)
                   })
               }

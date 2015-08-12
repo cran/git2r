@@ -73,7 +73,7 @@ setGeneric("stash_drop",
 ##' @export
 setMethod("stash_drop",
           signature(object = "git_repository"),
-          function (object, index)
+          function(object, index)
           {
               if (missing(index))
                   stop("missing argument 'index'")
@@ -89,7 +89,7 @@ setMethod("stash_drop",
 ##' @export
 setMethod("stash_drop",
           signature(object = "git_stash"),
-          function (object)
+          function(object)
           {
               ## Determine the index of the stash in the stash list
               i <- match(object@sha, sapply(stash_list(object@repo), slot, "sha"))
@@ -159,12 +159,12 @@ setGeneric("stash",
 ##' @export
 setMethod("stash",
           signature(object = "git_repository"),
-          function (object,
-                    message,
-                    index,
-                    untracked,
-                    ignored,
-                    stasher)
+          function(object,
+                   message,
+                   index,
+                   untracked,
+                   ignored,
+                   stasher)
           {
               invisible(.Call(git2r_stash_save,
                               object,
@@ -180,9 +180,14 @@ setMethod("stash",
 ##'
 ##' @rdname stash_list-methods
 ##' @docType methods
-##' @param repo The repository.
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return list of stashes in repository
 ##' @keywords methods
+##' @include S4_classes.r
 ##' @examples \dontrun{
 ##' ## Initialize a temporary repository
 ##' path <- tempfile(pattern="git2r-")
@@ -226,7 +231,16 @@ setGeneric("stash_list",
            standardGeneric("stash_list"))
 
 ##' @rdname stash_list-methods
-##' @include S4_classes.r
+##' @export
+setMethod("stash_list",
+          signature(repo = "missing"),
+          function()
+          {
+              callGeneric(repo = lookup_repository())
+          }
+)
+
+##' @rdname stash_list-methods
 ##' @export
 setMethod("stash_list",
           signature(repo = "git_repository"),
@@ -269,7 +283,7 @@ setMethod("stash_list",
 ##' }
 setMethod("show",
           signature(object = "git_stash"),
-          function (object)
+          function(object)
           {
               cat(sprintf("%s\n", object@message))
           }

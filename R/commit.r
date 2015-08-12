@@ -57,12 +57,26 @@ setGeneric("ahead_behind",
 ##' @export
 setMethod("ahead_behind",
           signature(local = "git_commit", upstream = "git_commit"),
-          function (local, upstream)
+          function(local, upstream)
           {
               stopifnot(identical(local@repo, upstream@repo))
               .Call(git2r_graph_ahead_behind, local, upstream)
           }
 )
+
+##' Add sessionInfo to message
+##'
+##' @param message The message.
+##' @return message with appended sessionInfo
+##' @importFrom utils capture.output
+##' @importFrom utils sessionInfo
+##' @keywords internal
+add_session_info <- function(message)
+{
+    paste0(message, "\n\nsessionInfo:\n",
+           paste0(utils::capture.output(utils::sessionInfo()),
+                  collapse="\n"))
+}
 
 ##' Commit
 ##'
@@ -111,13 +125,13 @@ setGeneric("commit",
 ##' @export
 setMethod("commit",
           signature(repo = "git_repository"),
-          function (repo,
-                    message,
-                    all,
-                    session,
-                    reference,
-                    author,
-                    committer)
+          function(repo,
+                   message,
+                   all,
+                   session,
+                   reference,
+                   author,
+                   committer)
           {
               ## Argument checking
               stopifnot(is.character(message),
@@ -148,11 +162,8 @@ setMethod("commit",
                   })
               }
 
-              if (session) {
-                  message <- paste0(message, "\n\nsessionInfo:\n",
-                                    paste0(capture.output(sessionInfo()),
-                                           collapse="\n"))
-              }
+              if (session)
+                  message <- add_session_info(message)
 
               .Call(git2r_commit, repo, message, author, committer)
           }
@@ -162,7 +173,11 @@ setMethod("commit",
 ##'
 ##' @rdname commits-methods
 ##' @docType methods
-##' @param repo The repository \code{object}.
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @param ... Additional arguments to commits.
 ##' @param topological Sort the commits in topological order (parents
 ##' before children); can be combined with time sorting. Default is
@@ -218,19 +233,18 @@ setGeneric("commits",
 ##' @export
 setMethod("commits",
           signature(repo = "missing"),
-          function(repo,
-                   topological = TRUE,
+          function(topological = TRUE,
                    time        = TRUE,
                    reverse     = FALSE,
                    n           = NULL,
                    ...)
           {
-              commits(repository(getwd(), discover = TRUE),
-                      topological = topological,
-                      time        = time,
-                      reverse     = reverse,
-                      n           = n,
-                      ...)
+              callGeneric(repo        = lookup_repository(),
+                          topological = topological,
+                          time        = time,
+                          reverse     = reverse,
+                          n           = n,
+                          ...)
           }
 )
 
@@ -309,7 +323,7 @@ setGeneric("descendant_of",
 ##' @export
 setMethod("descendant_of",
           signature(commit = "git_commit", ancestor = "git_commit"),
-          function (commit, ancestor)
+          function(commit, ancestor)
           {
               stopifnot(identical(commit@repo, ancestor@repo))
               .Call(git2r_graph_descendant_of, commit, ancestor)
@@ -408,7 +422,7 @@ setGeneric("is_merge",
 ##' @export
 setMethod("is_merge",
           signature(commit = "git_commit"),
-          function (commit)
+          function(commit)
           {
               length(parents(commit)) > 1
           }
@@ -496,7 +510,7 @@ setMethod("parents",
 ##' }
 setMethod("show",
           signature(object = "git_commit"),
-          function (object)
+          function(object)
           {
               cat(sprintf("[%s] %s: %s\n",
                           substring(object@sha, 1, 7),
@@ -555,18 +569,31 @@ setMethod("summary",
                           as(object@author@when, "character")))
 
               msg <- paste0("    ", readLines(textConnection(object@message)))
-              cat(" ", sprintf("%s\n", msg))
+              cat("", sprintf("%s\n", msg))
 
               if (is_merge_commit) {
+                  cat("\n")
                   lapply(po, function(parent) {
-                      msg <- paste0("    ", readLines(textConnection(parent@message)))
-                      cat(" ", sprintf("%s\n", msg), "\n")
+                      cat("Commit message: ", parent@sha, "\n")
+                      msg <- paste0("    ",
+                                    readLines(textConnection(parent@message)))
+                      cat("", sprintf("%s\n", msg), "\n")
                   })
               }
 
               if (identical(length(po), 1L)) {
                   df <- diff(tree(po[[1]]), tree(object))
                   if (length(df) > 0) {
+                      if (length(df) > 1) {
+                          cat(sprintf("%i files changed, ", length(df)))
+                      } else {
+                          cat("1 file changed, ")
+                      }
+
+                      cat(sprintf("%i insertions, %i deletions\n",
+                                  sum(sapply(lines_per_file(df), "[[", "add")),
+                                  sum(sapply(lines_per_file(df), "[[", "del"))))
+
                       plpf <- print_lines_per_file(df)
                       hpf <- hunks_per_file(df)
                       hunk_txt <- ifelse(hpf > 1, " hunks",

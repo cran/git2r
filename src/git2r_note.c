@@ -18,6 +18,7 @@
 
 #include <Rdefines.h>
 #include "git2.h"
+#include "buffer.h"
 
 #include "git2r_arg.h"
 #include "git2r_error.h"
@@ -60,7 +61,7 @@ static int git2r_note_init(
     char sha[GIT_OID_HEXSZ + 1];
 
     err = git_note_read(&note, repository, notes_ref, annotated_object_id);
-    if (GIT_OK != err)
+    if (err)
         return err;
 
     git_oid_fmt(sha, blob_id);
@@ -111,32 +112,32 @@ SEXP git2r_note_create(
     git_repository *repository = NULL;
 
     if (git2r_arg_check_sha(sha))
-        git2r_error(git2r_err_sha_arg, __func__, "sha");
+        git2r_error(__func__, NULL, "'sha'", git2r_err_sha_arg);
     if (git2r_arg_check_string(message))
-        git2r_error(git2r_err_string_arg, __func__, "message");
+        git2r_error(__func__, NULL, "'message'", git2r_err_string_arg);
     if (git2r_arg_check_string(ref))
-        git2r_error(git2r_err_string_arg, __func__, "ref");
+        git2r_error(__func__, NULL, "'ref'", git2r_err_string_arg);
     if (git2r_arg_check_signature(author))
-        git2r_error(git2r_err_signature_arg, __func__, "author");
+        git2r_error(__func__, NULL, "'author'", git2r_err_signature_arg);
     if (git2r_arg_check_signature(committer))
-        git2r_error(git2r_err_signature_arg, __func__, "committer");
+        git2r_error(__func__, NULL, "'committer'", git2r_err_signature_arg);
     if (git2r_arg_check_logical(force))
-        git2r_error(git2r_err_logical_arg, __func__, "force");
+        git2r_error(__func__, NULL, "'force'", git2r_err_logical_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git2r_signature_from_arg(&sig_author, author);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     err = git2r_signature_from_arg(&sig_committer, committer);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     err = git_oid_fromstr(&object_oid, CHAR(STRING_ELT(sha, 0)));
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     if (LOGICAL(force)[0])
@@ -151,7 +152,7 @@ SEXP git2r_note_create(
         &object_oid,
         CHAR(STRING_ELT(message, 0)),
         overwrite);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_note")));
@@ -175,8 +176,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -193,29 +194,31 @@ SEXP git2r_note_default_ref(SEXP repo)
 {
     int err;
     SEXP result = R_NilValue;
-    const char *ref;
+    git_buf buf = GIT_BUF_INIT;
     git_repository *repository = NULL;
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    err = git_note_default_ref(&ref, repository);
-    if (GIT_OK != err)
+    err = git_note_default_ref(&buf, repository);
+    if (err)
         goto cleanup;
 
     PROTECT(result = allocVector(STRSXP, 1));
-    SET_STRING_ELT(result, 0, mkChar(ref));
+    SET_STRING_ELT(result, 0, mkChar(buf.ptr));
 
 cleanup:
+    git_buf_free(&buf);
+
     if (repository)
         git_repository_free(repository);
 
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -252,7 +255,7 @@ static int git2r_note_foreach_cb(
             cb_data->notes_ref,
             cb_data->repo,
             note);
-        if (GIT_OK != err)
+        if (err)
             return err;
     }
 
@@ -272,29 +275,34 @@ SEXP git2r_notes(SEXP repo, SEXP ref)
 {
     int err;
     SEXP result = R_NilValue;
-    const char *notes_ref = NULL;
+    git_buf buf = GIT_BUF_INIT;
     git2r_note_foreach_cb_data cb_data = {0, R_NilValue, R_NilValue, NULL, NULL};
     git_repository *repository = NULL;
 
     if (R_NilValue != ref) {
         if (git2r_arg_check_string(ref))
-            git2r_error(git2r_err_string_arg, __func__, "ref");
-        notes_ref = CHAR(STRING_ELT(ref, 0));
+            git2r_error(__func__, NULL, "'ref'", git2r_err_string_arg);
     }
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    if (NULL == notes_ref) {
-        err = git_note_default_ref(&notes_ref, repository);
-        if (GIT_OK != err)
+    if (R_NilValue != ref) {
+        git_buf_sets(&buf, CHAR(STRING_ELT(ref, 0)));
+    } else {
+        err = git_note_default_ref(&buf, repository);
+        if (err)
             goto cleanup;
     }
 
     /* Count number of notes before creating the list */
-    err = git_note_foreach(repository, notes_ref, &git2r_note_foreach_cb, &cb_data);
-    if (GIT_OK != err) {
+    err = git_note_foreach(
+        repository,
+        git_buf_cstr(&buf),
+        &git2r_note_foreach_cb,
+        &cb_data);
+    if (err) {
         if (GIT_ENOTFOUND == err) {
             err = GIT_OK;
             PROTECT(result = allocVector(VECSXP, 0));
@@ -308,18 +316,21 @@ SEXP git2r_notes(SEXP repo, SEXP ref)
     cb_data.list = result;
     cb_data.repo = repo;
     cb_data.repository = repository;
-    cb_data.notes_ref = notes_ref;
-    err = git_note_foreach(repository, notes_ref, &git2r_note_foreach_cb, &cb_data);
+    cb_data.notes_ref = git_buf_cstr(&buf);
+    err = git_note_foreach(repository, git_buf_cstr(&buf),
+                           &git2r_note_foreach_cb, &cb_data);
 
 cleanup:
+    git_buf_free(&buf);
+
     if (repository)
         git_repository_free(repository);
 
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -343,28 +354,28 @@ SEXP git2r_note_remove(SEXP note, SEXP author, SEXP committer)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_note(note))
-        git2r_error(git2r_err_note_arg, __func__, "note");
+        git2r_error(__func__, NULL, "'note'", git2r_err_note_arg);
     if (git2r_arg_check_signature(author))
-        git2r_error(git2r_err_signature_arg, __func__, "author");
+        git2r_error(__func__, NULL, "'author'", git2r_err_signature_arg);
     if (git2r_arg_check_signature(committer))
-        git2r_error(git2r_err_signature_arg, __func__, "committer");
+        git2r_error(__func__, NULL, "'committer'", git2r_err_signature_arg);
 
     repo = GET_SLOT(note, Rf_install("repo"));
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git2r_signature_from_arg(&sig_author, author);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     err = git2r_signature_from_arg(&sig_committer, committer);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     annotated = GET_SLOT(note, Rf_install("annotated"));
     err = git_oid_fromstr(&note_oid, CHAR(STRING_ELT(annotated, 0)));
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     err = git_note_remove(
@@ -384,8 +395,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }

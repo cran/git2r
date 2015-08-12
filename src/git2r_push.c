@@ -25,31 +25,7 @@
 #include "git2r_push.h"
 #include "git2r_repository.h"
 #include "git2r_signature.h"
-
-/**
- * The invoked callback on each status entry
- *
- * @param ref The reference name pointer
- * @param msg Status report for each of the updated references.
- * @param payload A pointer to the payload data structure
- * @return 0
- */
-static int git2r_push_status_foreach_cb(
-    const char *ref,
-    const char *msg,
-    void *payload)
-{
-    const char **msg_dst = (const char **)payload;
-
-    /* The reference name pointer should never be NULL */
-    if (!ref)
-        return -1;
-
-    if (msg != NULL && *msg_dst == NULL)
-        *msg_dst = msg;
-
-    return 0;
-}
+#include "git2r_transfer.h"
 
 /**
  * Check if any non NA refspec
@@ -91,31 +67,29 @@ SEXP git2r_push(SEXP repo, SEXP name, SEXP refspec, SEXP credentials)
     git_repository *repository = NULL;
     git_strarray c_refspecs = {0};
     git_push_options opts = GIT_PUSH_OPTIONS_INIT;
-    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+    git2r_transfer_data payload = GIT2R_TRANSFER_DATA_INIT;
 
     if (git2r_arg_check_string(name))
-        git2r_error(git2r_err_string_arg, __func__, "name");
+        git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
     if (git2r_arg_check_string_vec(refspec))
-        git2r_error(git2r_err_string_vec_arg, __func__, "refspec");
+        git2r_error(__func__, NULL, "'refspec'", git2r_err_string_vec_arg);
     if (git2r_arg_check_credentials(credentials))
-        git2r_error(git2r_err_credentials_arg, __func__, "credentials");
+        git2r_error(__func__, NULL, "'credentials'", git2r_err_credentials_arg);
 
     if (git2r_nothing_to_push(refspec))
         return R_NilValue;
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_remote_lookup(&remote, repository, CHAR(STRING_ELT(name, 0)));
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
-    callbacks.credentials = &git2r_cred_acquire_cb;
-    callbacks.payload = credentials;
-    err = git_remote_set_callbacks(remote, &callbacks);
-    if (GIT_OK != err)
-        goto cleanup;
+    payload.credentials = credentials;
+    opts.callbacks.payload = &payload;
+    opts.callbacks.credentials = &git2r_cred_acquire_cb;
 
     c_refspecs.count = length(refspec);
     if (c_refspecs.count) {
@@ -146,8 +120,11 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(
+            __func__,
+            giterr_last(),
+            git2r_err_unable_to_authenticate, NULL);
 
     return R_NilValue;
 }

@@ -19,18 +19,26 @@
 #ifndef INCLUDE_git2r_error_h
 #define INCLUDE_git2r_error_h
 
+#include "git2.h"
+
 /**
  * Error messages
  */
 extern const char git2r_err_alloc_memory_buffer[];
+extern const char git2r_err_branch_not_local[];
+extern const char git2r_err_branch_not_remote[];
 extern const char git2r_err_checkout_tree[];
-extern const char git2r_err_from_libgit2[];
+extern const char git2r_err_invalid_refname[];
+extern const char git2r_err_invalid_remote[];
 extern const char git2r_err_invalid_repository[];
 extern const char git2r_err_nothing_added_to_commit[];
+extern const char git2r_err_object_type[];
+extern const char git2r_err_reference[];
+extern const char git2r_err_repo_init[];
+extern const char git2r_err_revparse_not_found[];
 extern const char git2r_err_revparse_single[];
 extern const char git2r_err_unexpected_config_level[];
-extern const char git2r_err_unexpected_head_of_branch[];
-extern const char git2r_err_unexpected_type_of_branch[];
+extern const char git2r_err_unable_to_authenticate[];
 
 /**
  * Error messages specific to argument checking
@@ -54,6 +62,10 @@ extern const char git2r_err_string_vec_arg[];
 extern const char git2r_err_tag_arg[];
 extern const char git2r_err_tree_arg[];
 
-void git2r_error(const char *format, const char *func_name, const char *arg);
+void git2r_error(
+    const char *func_name,
+    const git_error *err,
+    const char *msg1,
+    const char *msg2);
 
 #endif

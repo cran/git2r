@@ -28,6 +28,8 @@
 ##' @param ... Additional arguments affecting the plot
 ##' @keywords methods
 ##' @include S4_classes.r
+##' @importFrom graphics axis
+##' @importFrom graphics barplot
 ##' @export
 ##' @examples
 ##' \dontrun{
@@ -41,10 +43,10 @@
 ##' }
 setMethod("plot",
           signature(x = "git_repository"),
-          function (x,
-                    breaks = c("month", "year", "quarter", "week", "day"),
-                    main = NULL,
-                    ...)
+          function(x,
+                   breaks = c("month", "year", "quarter", "week", "day"),
+                   main = NULL,
+                   ...)
           {
               breaks = match.arg(breaks)
 
@@ -60,7 +62,7 @@ setMethod("plot",
               xlab <- sprintf("Time [%s]", breaks)
               ylab <- "Number of commits"
               if (is.null(main)) {
-                  if (is_bare(repo)) {
+                  if (is_bare(x)) {
                       main <- "Commits"
                   } else {
                       main <- sprintf("Commits on repository: %s",
@@ -68,7 +70,9 @@ setMethod("plot",
                   }
               }
 
-              mp <- barplot(df$n, xlab = xlab, ylab = ylab, main = main, ...)
-              axis(1, at = mp, labels = seq(min(df$when), max(df$when), breaks))
+              mp <- graphics::barplot(df$n, xlab = xlab, ylab = ylab,
+                                      main = main, ...)
+              graphics::axis(1, at = mp, labels = seq(min(df$when),
+                                             max(df$when), breaks))
           }
 )

@@ -36,10 +36,10 @@ SEXP git2r_signature_default(SEXP repo)
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_signature_default(&signature, repository);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_signature")));
@@ -55,8 +55,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }

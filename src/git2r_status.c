@@ -104,6 +104,8 @@ static size_t git2r_status_count_unstaged(git_status_list *status_list)
             changes++;
         else if (s->status == (GIT_STATUS_INDEX_DELETED | GIT_STATUS_WT_NEW))
             changes++;
+        else if (s->status & GIT_STATUS_CONFLICTED)
+            changes++;
     }
 
     return changes;
@@ -273,6 +275,8 @@ static void git2r_status_list_unstaged(
             wstatus = "typechange";
         else if (s->status == (GIT_STATUS_INDEX_DELETED | GIT_STATUS_WT_NEW))
             wstatus = "unmerged";
+        else if (s->status & GIT_STATUS_CONFLICTED)
+            wstatus = "conflicted";
 
         if (!wstatus)
             continue;
@@ -360,17 +364,17 @@ SEXP git2r_status_list(
     git_status_options opts = GIT_STATUS_OPTIONS_INIT;
 
     if (git2r_arg_check_logical(staged))
-        git2r_error(git2r_err_logical_arg, __func__, "staged");
+        git2r_error(__func__, NULL, "'staged'", git2r_err_logical_arg);
     if (git2r_arg_check_logical(unstaged))
-        git2r_error(git2r_err_logical_arg, __func__, "unstaged");
+        git2r_error(__func__, NULL, "'unstaged'", git2r_err_logical_arg);
     if (git2r_arg_check_logical(untracked))
-        git2r_error(git2r_err_logical_arg, __func__, "untracked");
+        git2r_error(__func__, NULL, "'untracked'", git2r_err_logical_arg);
     if (git2r_arg_check_logical(ignored))
-        git2r_error(git2r_err_logical_arg, __func__, "ignored");
+        git2r_error(__func__, NULL, "'ignored'", git2r_err_logical_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     opts.show  = GIT_STATUS_SHOW_INDEX_AND_WORKDIR;
     opts.flags = GIT_STATUS_OPT_RENAMES_HEAD_TO_INDEX |
@@ -381,7 +385,7 @@ SEXP git2r_status_list(
     if (LOGICAL(ignored)[0])
         opts.flags |= GIT_STATUS_OPT_INCLUDE_IGNORED;
     err = git_status_list_new(&status_list, repository, &opts);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     count = LOGICAL(staged)[0] +
@@ -426,8 +430,8 @@ cleanup:
     if (R_NilValue != list)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return list;
 }

@@ -8,16 +8,20 @@
 \title{Status}
 \usage{
 status(repo, staged = TRUE, unstaged = TRUE, untracked = TRUE,
-  ignored = FALSE)
+  ignored = FALSE, ...)
 
 \S4method{status}{missing}(repo, staged = TRUE, unstaged = TRUE,
-  untracked = TRUE, ignored = FALSE)
+  untracked = TRUE, ignored = FALSE, ...)
 
 \S4method{status}{git_repository}(repo, staged = TRUE, unstaged = TRUE,
-  untracked = TRUE, ignored = FALSE)
+  untracked = TRUE, ignored = FALSE, ...)
 }
 \arguments{
-\item{repo}{The \code{git_repository} to get status from.}
+\item{repo}{The repository \code{object}
+\code{\linkS4class{git_repository}} to get status from. If the
+\code{repo} argument is missing, the repository is searched for
+with \code{\link{discover_repository}} in the current working
+directory.}
 
 \item{staged}{Include staged files. Default TRUE.}
 
@@ -26,6 +30,8 @@ status(repo, staged = TRUE, unstaged = TRUE, untracked = TRUE,
 \item{untracked}{Include untracked files. Default TRUE.}
 
 \item{ignored}{Include ignored files. Default FALSE.}
+
+\item{...}{Additional arguments to status.}
 }
 \value{
 S3 class \code{git_status} with repository status

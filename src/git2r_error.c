@@ -17,73 +17,94 @@
  */
 
 #include <Rinternals.h>
+#include "git2.h"
 
 /**
  * Error messages
  */
 
 const char git2r_err_alloc_memory_buffer[] = "Unable to allocate memory buffer";
+const char git2r_err_branch_not_local[] = "'branch' is not local";
+const char git2r_err_branch_not_remote[] = "'branch' is not remote";
 const char git2r_err_checkout_tree[] = "Expected commit, tag or tree";
-const char git2r_err_from_libgit2[] = "Error in '%s': %s\n";
+const char git2r_err_invalid_refname[] = "Invalid reference name";
+const char git2r_err_invalid_remote[] = "Invalid remote name";
 const char git2r_err_invalid_repository[] = "Invalid repository";
 const char git2r_err_nothing_added_to_commit[] = "Nothing added to commit";
+const char git2r_err_object_type[] = "Unexpected object type.";
+const char git2r_err_reference[] = "Unexpected reference type";
+const char git2r_err_repo_init[] = "Unable to init repository";
+const char git2r_err_revparse_not_found[] = "Requested object could not be found";
 const char git2r_err_revparse_single[] = "Expected commit, tag or tree";
 const char git2r_err_unexpected_config_level[] = "Unexpected config level";
-const char git2r_err_unexpected_type_of_branch[] = "Unexpected type of branch";
-const char git2r_err_unexpected_head_of_branch[] = "Unexpected head of branch";
+const char git2r_err_unable_to_authenticate[] = "Unable to authenticate with supplied credentials";
 
 /**
  * Error messages specific to argument checking
  */
 const char git2r_err_blob_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_blob";
+    "must be a S4 class git_blob";
 const char git2r_err_branch_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_branch";
+    "must be a S4 class git_branch";
 const char git2r_err_commit_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_commit";
+    "must be a S4 class git_commit";
 const char git2r_err_credentials_arg[] =
-    "Error in '%s': '%s' must be a S4 class with credentials";
+    "must be a S4 class with credentials";
 const char git2r_err_diff_arg[] =
-    "Error in '%s': Invalid diff parameters";
+    "Invalid diff parameters";
 const char git2r_err_fetch_heads_arg[] =
-    "Error in '%s': '%s' must be a list of S4 git_fetch_head objects";
+    "must be a list of S4 git_fetch_head objects";
 const char git2r_err_filename_arg[] =
-    "Error in '%s': '%s' must be either 1) NULL, or 2) a character vector of length 0 or 3) a character vector of length 1 and nchar > 0";
+    "must be either 1) NULL, or 2) a character vector of length 0 or 3) a character vector of length 1 and nchar > 0";
 const char git2r_err_sha_arg[] =
-    "Error in '%s': '%s' must be a sha value";
+    "must be a sha value";
 const char git2r_err_integer_arg[] =
-    "Error in '%s': '%s' must be an integer vector of length one with non NA value";
+    "must be an integer vector of length one with non NA value";
 const char git2r_err_integer_gte_zero_arg[] =
-    "Error in '%s': '%s' must be an integer vector of length one with value greater than or equal to zero";
+    "must be an integer vector of length one with value greater than or equal to zero";
 const char git2r_err_list_arg[] =
-    "Error in '%s': '%s' must be a list";
+    "must be a list";
 const char git2r_err_logical_arg[] =
-    "Error in '%s': '%s' must be logical vector of length one with non NA value";
+    "must be logical vector of length one with non NA value";
 const char git2r_err_note_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_note";
+    "must be a S4 class git_note";
 const char git2r_err_signature_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_signature";
+    "must be a S4 class git_signature";
 const char git2r_err_string_arg[] =
-    "Error in '%s': '%s' must be a character vector of length one with non NA value";
+    "must be a character vector of length one with non NA value";
 const char git2r_err_string_vec_arg[] =
-    "Error in '%s': '%s' must be a character vector";
+    "must be a character vector";
 const char git2r_err_tag_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_tag";
+    "must be a S4 class git_tag";
 const char git2r_err_tree_arg[] =
-    "Error in '%s': '%s' must be a S4 class git_tree";
+    "must be a S4 class git_tree";
 
 /**
  * Raise error
  *
- * @param format C string that contains the text to be written to
- * Rf_error
- * @param func_name The name of the function that raise the error
- * @param arg Optional text argument
+ * @param func_name The name of the function that raise the error.
+ * @param err Optional error argument from libgit2 with the git_error
+ * object that was last generated.
+ * @param msg1 Optional text argument with error message, used if
+ * 'err' is NULL.
+ * @param msg2 Optional text argument, e.g. used during argument
+ * checking to pass the error message to the variable name in 'msg1'.
  */
-void git2r_error(const char *format, const char *func_name, const char *arg)
+void git2r_error(
+    const char *func_name,
+    const git_error *err,
+    const char *msg1,
+    const char *msg2)
 {
-    if (arg)
-        Rf_error(format, func_name, arg);
+    if (func_name && err && err->message)
+        Rf_error("Error in '%s': %s\n", func_name, err->message);
+    else if (func_name && msg1 && msg2)
+        Rf_error("Error in '%s': %s %s\n", func_name, msg1, msg2);
+    else if (func_name && msg1)
+        Rf_error("Error in '%s': %s\n", func_name, msg1);
+    else if (func_name)
+        Rf_error("Error in '%s'\n", func_name);
     else
-        Rf_error(format, func_name);
+        Rf_error("Unexpected error. Please report at"
+                 " https://github.com/ropensci/git2r/issues\n");
 }

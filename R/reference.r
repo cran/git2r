@@ -18,7 +18,11 @@
 ##'
 ##' @rdname references-methods
 ##' @docType methods
-##' @param repo The repository \code{object}.
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return Character vector with references
 ##' @keywords methods
 ##' @examples
@@ -62,8 +66,19 @@ setGeneric("references",
 ##' @include S4_classes.r
 ##' @export
 setMethod("references",
+          signature(repo = "missing"),
+          function()
+          {
+              callGeneric(repo = lookup_repository())
+          }
+)
+
+##' @rdname references-methods
+##' @include S4_classes.r
+##' @export
+setMethod("references",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_reference_list, repo)
           }
@@ -96,7 +111,7 @@ setMethod("references",
 ##' }
 setMethod("show",
           signature(object = "git_reference"),
-          function (object)
+          function(object)
           {
               if (identical(object@type, 1L)) {
                   cat(sprintf("[%s] %s\n",

@@ -117,18 +117,18 @@ SEXP git2r_blame_file(SEXP repo, SEXP path)
     git_blame_options blame_opts = GIT_BLAME_OPTIONS_INIT;
 
     if (git2r_arg_check_string(path))
-        git2r_error(git2r_err_string_arg, __func__, "path");
+        git2r_error(__func__, NULL, "'path'", git2r_err_string_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_blame_file(
         &blame,
         repository,
         CHAR(STRING_ELT(path, 0)),
         &blame_opts);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_blame")));
@@ -144,8 +144,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }

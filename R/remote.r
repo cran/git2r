@@ -18,7 +18,11 @@
 ##'
 ##' @rdname remotes-methods
 ##' @docType methods
-##' @param repo The repository to get remotes from
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return Character vector with remotes
 ##' @keywords methods
 ##' @examples
@@ -56,8 +60,18 @@ setGeneric("remotes",
 ##' @rdname remotes-methods
 ##' @export
 setMethod("remotes",
+          signature(repo = "missing"),
+          function()
+          {
+              callGeneric(repo = lookup_repository())
+          }
+)
+
+##' @rdname remotes-methods
+##' @export
+setMethod("remotes",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_remote_list, repo)
           }
@@ -270,7 +284,7 @@ setGeneric("remote_url",
 ##' @export
 setMethod("remote_url",
           signature(repo = "git_repository"),
-          function (repo, remote)
+          function(repo, remote)
           {
               .Call(git2r_remote_url, repo, remote)
           }

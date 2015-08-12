@@ -45,17 +45,17 @@ SEXP git2r_reset(SEXP commit, SEXP reset_type)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_commit(commit))
-        git2r_error(git2r_err_commit_arg, __func__, "commit");
+        git2r_error(__func__, NULL, "'commit'", git2r_err_commit_arg);
     if (git2r_arg_check_integer(reset_type))
-        git2r_error(git2r_err_integer_arg, __func__, "reset_type");
+        git2r_error(__func__, NULL, "'reset_type'", git2r_err_integer_arg);
 
     repo = GET_SLOT(commit, Rf_install("repo"));
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git2r_commit_lookup(&target, repository, commit);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     err = git_reset(
@@ -71,8 +71,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }

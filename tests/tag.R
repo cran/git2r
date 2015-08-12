@@ -76,7 +76,7 @@ add(repo, 'test.txt')
 commit(repo, "Commit message")
 
 ## Check tags, no tag added
-stopifnot(identical(tags(repo), list()))
+stopifnot(identical(tags(repo), structure(list(), .Names = character(0))))
 
 ## Create tag
 new_tag <- tag(repo, "Tagname", "Tag message")
@@ -101,6 +101,12 @@ stopifnot(identical(table(odb_objects(repo)$type),
                                   c("blob", "commit", "tag", "tree")),
                                   .Names = ""),
                               class = "table")))
+
+## Check tags method with missing repo argument
+wd <- setwd(path)
+stopifnot(identical(length(tags()), 1L))
+if (!is.null(wd))
+    setwd(wd)
 
 ## Cleanup
 unlink(path, recursive=TRUE)

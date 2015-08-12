@@ -75,29 +75,29 @@ SEXP git2r_diff(SEXP repo, SEXP tree1, SEXP tree2, SEXP index, SEXP filename)
     int c_index;
 
     if (git2r_arg_check_logical(index))
-        git2r_error(git2r_err_logical_arg, __func__, "index");
+        git2r_error(__func__, NULL, "'index'", git2r_err_logical_arg);
 
     c_index = LOGICAL(index)[0];
 
     if (isNull(tree1) && ! c_index) {
 	if (!isNull(tree2))
-	    git2r_error(git2r_err_diff_arg, __func__, NULL);
+	    git2r_error(__func__, NULL, git2r_err_diff_arg, NULL);
 	return git2r_diff_index_to_wd(repo, filename);
     } else if (isNull(tree1) && c_index) {
 	if (!isNull(tree2))
-	    git2r_error(git2r_err_diff_arg, __func__, NULL);
+	    git2r_error(__func__, NULL, git2r_err_diff_arg, NULL);
 	return git2r_diff_head_to_index(repo, filename);
     } else if (!isNull(tree1) && isNull(tree2) && ! c_index) {
 	if (!isNull(repo))
-	    git2r_error(git2r_err_diff_arg, __func__, NULL);
+	    git2r_error(__func__, NULL, git2r_err_diff_arg, NULL);
 	return git2r_diff_tree_to_wd(tree1, filename);
     } else if (!isNull(tree1) && isNull(tree2) && c_index) {
 	if (!isNull(repo))
-	    git2r_error(git2r_err_diff_arg, __func__, NULL);
+	    git2r_error(__func__, NULL, git2r_err_diff_arg, NULL);
 	return git2r_diff_tree_to_index(tree1, filename);
     } else {
 	if (!isNull(repo))
-	    git2r_error(git2r_err_diff_arg, __func__, NULL);
+	    git2r_error(__func__, NULL, git2r_err_diff_arg, NULL);
 	return git2r_diff_tree_to_tree(tree1, tree2, filename);
     }
 }
@@ -124,18 +124,18 @@ SEXP git2r_diff_index_to_wd(SEXP repo, SEXP filename)
     SEXP result = R_NilValue;
 
     if (git2r_arg_check_filename(filename))
-        git2r_error(git2r_err_filename_arg, __func__, "filename");
+        git2r_error(__func__, NULL, "'filename'", git2r_err_filename_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_diff_index_to_workdir(&diff,
 				    repository,
 				    /*index=*/ NULL,
 				    /*opts=*/ NULL);
 
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     if (R_NilValue == filename) {
@@ -157,8 +157,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -186,18 +186,18 @@ SEXP git2r_diff_head_to_index(SEXP repo, SEXP filename)
     SEXP result = R_NilValue;
 
     if (git2r_arg_check_filename(filename))
-        git2r_error(git2r_err_filename_arg, __func__, "filename");
+        git2r_error(__func__, NULL, "'filename'", git2r_err_filename_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_revparse_single(&obj, repository, "HEAD^{tree}");
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_tree_lookup(&head, repository, git_object_id(obj));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_diff_tree_to_index(
@@ -206,7 +206,7 @@ SEXP git2r_diff_head_to_index(SEXP repo, SEXP filename)
         head,
         /* index= */ NULL,
         /* opts = */ NULL);
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     if (R_NilValue == filename) {
@@ -235,8 +235,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -266,26 +266,26 @@ SEXP git2r_diff_tree_to_wd(SEXP tree, SEXP filename)
     SEXP repo;
 
     if (git2r_arg_check_tree(tree))
-        git2r_error(git2r_err_tree_arg, __func__, "tree");
+        git2r_error(__func__, NULL, "'tree'", git2r_err_tree_arg);
     if (git2r_arg_check_filename(filename))
-        git2r_error(git2r_err_filename_arg, __func__, "filename");
+        git2r_error(__func__, NULL, "'filename'", git2r_err_filename_arg);
 
     repo = GET_SLOT(tree, Rf_install("repo"));
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     sha = GET_SLOT(tree, Rf_install("sha"));
     err = git_revparse_single(&obj, repository, CHAR(STRING_ELT(sha, 0)));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_tree_lookup(&c_tree, repository, git_object_id(obj));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_diff_tree_to_workdir(&diff, repository, c_tree, /* opts = */ NULL);
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     if (R_NilValue == filename) {
@@ -313,8 +313,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -344,22 +344,22 @@ SEXP git2r_diff_tree_to_index(SEXP tree, SEXP filename)
     SEXP repo;
 
     if (git2r_arg_check_tree(tree))
-        git2r_error(git2r_err_tree_arg, __func__, "tree");
+        git2r_error(__func__, NULL, "'tree'", git2r_err_tree_arg);
     if (git2r_arg_check_filename(filename))
-        git2r_error(git2r_err_filename_arg, __func__, "filename");
+        git2r_error(__func__, NULL, "'filename'", git2r_err_filename_arg);
 
     repo = GET_SLOT(tree, Rf_install("repo"));
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     sha = GET_SLOT(tree, Rf_install("sha"));
     err = git_revparse_single(&obj, repository, CHAR(STRING_ELT(sha, 0)));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_tree_lookup(&c_tree, repository, git_object_id(obj));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_diff_tree_to_index(
@@ -368,7 +368,7 @@ SEXP git2r_diff_tree_to_index(SEXP tree, SEXP filename)
         c_tree,
         /* index= */ NULL,
         /* opts= */ NULL);
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     if (R_NilValue == filename) {
@@ -396,8 +396,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-	git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+	git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -428,34 +428,34 @@ SEXP git2r_diff_tree_to_tree(SEXP tree1, SEXP tree2, SEXP filename)
     SEXP sha1, sha2;
 
     if (git2r_arg_check_tree(tree1))
-        git2r_error(git2r_err_tree_arg, __func__, "tree1");
+        git2r_error(__func__, NULL, "'tree1'", git2r_err_tree_arg);
     if (git2r_arg_check_tree(tree2))
-        git2r_error(git2r_err_tree_arg, __func__, "tree2");
+        git2r_error(__func__, NULL, "'tree2'", git2r_err_tree_arg);
     if (git2r_arg_check_filename(filename))
-        git2r_error(git2r_err_filename_arg, __func__, "filename");
+        git2r_error(__func__, NULL, "'filename'", git2r_err_filename_arg);
 
     /* We already checked that tree2 is from the same repo, in R */
     repo = GET_SLOT(tree1, Rf_install("repo"));
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     sha1 = GET_SLOT(tree1, Rf_install("sha"));
     err = git_revparse_single(&obj1, repository, CHAR(STRING_ELT(sha1, 0)));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     sha2 = GET_SLOT(tree2, Rf_install("sha"));
     err = git_revparse_single(&obj2, repository, CHAR(STRING_ELT(sha2, 0)));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_tree_lookup(&c_tree1, repository, git_object_id(obj1));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_tree_lookup(&c_tree2, repository, git_object_id(obj2));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     err = git_diff_tree_to_tree(
@@ -464,7 +464,7 @@ SEXP git2r_diff_tree_to_tree(SEXP tree1, SEXP tree2, SEXP filename)
         c_tree1,
         c_tree2,
         /* opts= */ NULL);
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     if (R_NilValue == filename) {
@@ -498,8 +498,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-	git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+	git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -606,11 +606,12 @@ int git2r_diff_count(git_diff *diff,
 
     err = git_diff_foreach(diff,
 			   git2r_diff_count_file_cb,
+                           /* binary_cb */ NULL,
 			   git2r_diff_count_hunk_cb,
 			   git2r_diff_count_line_cb,
 			   /* payload= */ (void*) &n);
 
-    if (GIT_OK != err)
+    if (err)
 	return -1;
 
     *num_files = n.num_files;
@@ -837,7 +838,7 @@ int git2r_diff_format_to_r(git_diff *diff, SEXP dest)
 
     err = git2r_diff_count(diff, &num_files, &max_hunks, &max_lines);
 
-    if (GIT_OK != err)
+    if (err)
         return err;
 
     SET_SLOT(
@@ -850,6 +851,7 @@ int git2r_diff_format_to_r(git_diff *diff, SEXP dest)
     err = git_diff_foreach(
         diff,
         git2r_diff_get_file_cb,
+        /* binary_cb */ NULL,
         git2r_diff_get_hunk_cb,
         git2r_diff_get_line_cb,
         &payload);

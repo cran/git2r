@@ -408,6 +408,10 @@ setMethod("branch_set_upstream",
 ##' @rdname branches-methods
 ##' @docType methods
 ##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @param flags Filtering flags for the branch listing. Valid values
 ##' are 'all', 'local' or 'remote'
 ##' @return list of branches in repository
@@ -447,8 +451,18 @@ setGeneric("branches",
 ##' @rdname branches-methods
 ##' @export
 setMethod("branches",
+          signature(repo = "missing"),
+          function(flags)
+          {
+              callGeneric(repo = lookup_repository(), flags = flags)
+          }
+)
+
+##' @rdname branches-methods
+##' @export
+setMethod("branches",
           signature(repo = "git_repository"),
-          function (repo, flags)
+          function(repo, flags)
           {
               flags <- switch(match.arg(flags),
                               local  = 1L,
@@ -505,7 +519,7 @@ setGeneric("is_head",
 ##' @export
 setMethod("is_head",
           signature(branch = "git_branch"),
-          function (branch)
+          function(branch)
           {
               .Call(git2r_branch_is_head, branch)
           }
@@ -560,7 +574,7 @@ setGeneric("is_local",
 ##' @export
 setMethod("is_local",
           signature(branch = "git_branch"),
-          function (branch)
+          function(branch)
           {
               identical(branch@type, 1L)
           }
@@ -593,7 +607,7 @@ setMethod("is_local",
 ##' }
 setMethod("show",
           signature(object = "git_branch"),
-          function (object)
+          function(object)
           {
               sha <- branch_target(object)
               if (!is.na(sha)) {

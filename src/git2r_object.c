@@ -44,22 +44,22 @@ SEXP git2r_object_lookup(SEXP repo, SEXP sha)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_sha(sha))
-        git2r_error(git2r_err_sha_arg, __func__, "sha");
+        git2r_error(__func__, NULL, "'sha'", git2r_err_sha_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     len = LENGTH(STRING_ELT(sha, 0));
     if (GIT_OID_HEXSZ == len) {
         git_oid_fromstr(&oid, CHAR(STRING_ELT(sha, 0)));
         err = git_object_lookup(&object, repository, &oid, GIT_OBJ_ANY);
-        if (GIT_OK != err)
+        if (err)
             goto cleanup;
     } else {
         git_oid_fromstrn(&oid, CHAR(STRING_ELT(sha, 0)), len);
         err = git_object_lookup_prefix(&object, repository, &oid, len, GIT_OBJ_ANY);
-        if (GIT_OK != err)
+        if (err)
             goto cleanup;
     }
 
@@ -81,7 +81,7 @@ SEXP git2r_object_lookup(SEXP repo, SEXP sha)
         git2r_tag_init((git_tag*)object, repo, result);
         break;
     default:
-        git2r_error("Error in '%s': Unimplemented object type. Sorry.", __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_object_type, NULL);
     }
 
 cleanup:
@@ -94,8 +94,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }

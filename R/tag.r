@@ -25,6 +25,7 @@
 ##' @param tagger The tagger (author) of the tag
 ##' @return invisible(\code{git_tag}) object
 ##' @keywords methods
+##' @include commit.r
 ##' @examples
 ##' \dontrun{
 ##' ## Initialize a temporary repository
@@ -59,11 +60,11 @@ setGeneric("tag",
 ##' @export
 setMethod("tag",
           signature(object = "git_repository"),
-          function (object,
-                    name,
-                    message,
-                    session,
-                    tagger)
+          function(object,
+                   name,
+                   message,
+                   session,
+                   tagger)
           {
               ## Argument checking
               stopifnot(is.character(name),
@@ -76,11 +77,8 @@ setMethod("tag",
                         identical(length(session), 1L),
                         is(tagger, "git_signature"))
 
-              if (session) {
-                  message <- paste0(message, "\n\nsessionInfo:\n",
-                                    paste0(capture.output(sessionInfo()),
-                                           collapse="\n"))
-              }
+              if (session)
+                  message <- add_session_info(message)
 
               invisible(.Call(git2r_tag_create, object, name, message, tagger))
           }
@@ -90,7 +88,11 @@ setMethod("tag",
 ##'
 ##' @rdname tags-methods
 ##' @docType methods
-##' @param repo The repository
+##' @param repo The repository \code{object}
+##' \code{\linkS4class{git_repository}}. If the \code{repo} argument
+##' is missing, the repository is searched for with
+##' \code{\link{discover_repository}} in the current working
+##' directory.
 ##' @return list of tags in repository
 ##' @keywords methods
 ##' @examples
@@ -122,8 +124,18 @@ setGeneric("tags",
 ##' @rdname tags-methods
 ##' @export
 setMethod("tags",
+          signature(repo = "missing"),
+          function()
+          {
+              callGeneric(repo = lookup_repository())
+          }
+)
+
+##' @rdname tags-methods
+##' @export
+setMethod("tags",
           signature(repo = "git_repository"),
-          function (repo)
+          function(repo)
           {
               .Call(git2r_tag_list, repo)
           }
@@ -160,7 +172,7 @@ setMethod("tags",
 ##' }
 setMethod("show",
           signature(object = "git_tag"),
-          function (object)
+          function(object)
           {
               cat(sprintf("[%s] %s\n",
                           substr(object@target, 1 , 6),

@@ -863,7 +863,7 @@ int git_reference__normalize_name(
 	const char *name,
 	unsigned int flags)
 {
-	char *current;
+	const char *current;
 	int segment_len, segments_count = 0, error = GIT_EINVALIDSPEC;
 	unsigned int process_flags;
 	bool normalize = (buf != NULL);
@@ -1052,12 +1052,10 @@ static int get_terminal(git_reference **out, git_repository *repo, const char *r
 		error = 0;
 	} else {
 		error = get_terminal(out, repo, git_reference_symbolic_target(ref), nesting + 1);
-		if (error == GIT_ENOTFOUND) {
-			if (!*out) /* set by the error case in lookup above */
-				*out = ref;
-		} else {
+		if (error == GIT_ENOTFOUND && !*out)
+			*out = ref;
+		else
 			git_reference_free(ref);
-		}
 	}
 
 	return error;

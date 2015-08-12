@@ -18,9 +18,59 @@
 
 #include <Rdefines.h>
 #include "git2.h"
+
+#include "git2r_arg.h"
 #include "git2r_error.h"
 #include "git2r_reference.h"
 #include "git2r_repository.h"
+
+/**
+ * Lookup the full name of a reference by DWIMing its short name
+ *
+ * @param repo S4 class git_repository
+ * @param shorthand The short name for the reference
+ * @return Character vector of length one with the full name of the
+ * reference
+ */
+SEXP git2r_reference_dwim(SEXP repo, SEXP shorthand)
+{
+    int err;
+    SEXP result = R_NilValue;
+    git_reference* reference = NULL;
+    git_repository *repository = NULL;
+
+    if (git2r_arg_check_string(shorthand))
+        git2r_error(__func__, NULL, "'shorthand'", git2r_err_string_arg);
+
+    repository = git2r_repository_open(repo);
+    if (!repository)
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
+
+    err = git_reference_dwim(
+        &reference,
+        repository,
+        CHAR(STRING_ELT(shorthand, 0)));
+    if (err)
+        goto cleanup;
+
+    PROTECT(result = allocVector(STRSXP, 1));
+    SET_STRING_ELT(result, 0, mkChar(git_reference_name(reference)));
+
+cleanup:
+    if (reference)
+        git_reference_free(reference);
+
+    if (repository)
+        git_repository_free(repository);
+
+    if (R_NilValue != result)
+        UNPROTECT(1);
+
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
+
+    return result;
+}
 
 /**
  * Init slots in S4 class git_reference.
@@ -54,7 +104,7 @@ void git2r_reference_init(git_reference *source, SEXP dest)
             mkString(git_reference_symbolic_target(source)));
         break;
     default:
-        git2r_error("Error in '%s': Unexpected reference type", __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_reference, NULL);
     }
 }
 
@@ -75,10 +125,10 @@ SEXP git2r_reference_list(SEXP repo)
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_reference_list(&ref_list, repository);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     PROTECT(result = allocVector(VECSXP, ref_list.count));
@@ -92,7 +142,7 @@ SEXP git2r_reference_list(SEXP repo)
         git_reference *ref = NULL;
 
         err = git_reference_lookup(&ref, repository, ref_list.strings[i]);
-        if (GIT_OK != err)
+        if (err)
             goto cleanup;
 
         SET_VECTOR_ELT(
@@ -115,8 +165,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }

@@ -28,6 +28,7 @@
 ##' @seealso \code{\linkS4class{cred_user_pass}},
 ##' \code{\linkS4class{cred_ssh_key}}
 ##' @keywords methods
+##' @include refspec.r
 ##' @include S4_classes.r
 ##' @examples
 ##' \dontrun{
@@ -75,9 +76,9 @@ setGeneric("push",
 ##' @export
 setMethod("push",
           signature(object = "git_branch"),
-          function (object,
-                    force       = FALSE,
-                    credentials = NULL)
+          function(object,
+                   force       = FALSE,
+                   credentials = NULL)
           {
               upstream <- branch_get_upstream(object)
               if (is.null(upstream)) {
@@ -102,11 +103,11 @@ setMethod("push",
 ##' @export
 setMethod("push",
           signature(object = "git_repository"),
-          function (object,
-                    name        = NULL,
-                    refspec     = NULL,
-                    force       = FALSE,
-                    credentials = NULL)
+          function(object,
+                   name        = NULL,
+                   refspec     = NULL,
+                   force       = FALSE,
+                   credentials = NULL)
           {
               if (all(is.null(name), is.null(refspec))) {
                   b <- head(object)
@@ -120,12 +121,15 @@ setMethod("push",
                   dst <- .Call(git2r_branch_upstream_canonical_name, b)
                   name <- branch_remote_name(upstream)
                   refspec <- paste0(src, ":", dst)
-              } else if (any(is.null(name), is.null(refspec))) {
-                  stop("Both 'name' and 'refspec' must be 'character' or 'NULL'")
-              }
 
-              if (identical(force, TRUE))
-                  refspec <- paste0("+", refspec)
+                  if (identical(force, TRUE))
+                      refspec <- paste0("+", refspec)
+              } else {
+                  opts <- list(force = force)
+                  tmp <- get_refspec(object, name, refspec, opts)
+                  name <- tmp$remote
+                  refspec <- tmp$refspec
+              }
 
               result <- .Call(git2r_push, object, name, refspec, credentials)
 

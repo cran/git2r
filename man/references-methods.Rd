@@ -4,14 +4,21 @@
 \name{references}
 \alias{references}
 \alias{references,git_repository-method}
+\alias{references,missing-method}
 \title{Get all references that can be found in a repository.}
 \usage{
 references(repo)
 
+\S4method{references}{missing}()
+
 \S4method{references}{git_repository}(repo)
 }
 \arguments{
-\item{repo}{The repository \code{object}.}
+\item{repo}{The repository \code{object}
+\code{\linkS4class{git_repository}}. If the \code{repo} argument
+is missing, the repository is searched for with
+\code{\link{discover_repository}} in the current working
+directory.}
 }
 \value{
 Character vector with references

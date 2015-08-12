@@ -29,22 +29,26 @@
  *
  * @param repo S4 class git_repository
  * @param path array of path patterns
+ * @param force if TRUE, add ignored files.
  * @return R_NilValue
  */
-SEXP git2r_index_add_all(SEXP repo, SEXP path)
+SEXP git2r_index_add_all(SEXP repo, SEXP path, SEXP force)
 {
     int err = GIT_OK;
     size_t i, len;
+    unsigned int flags = 0;
     git_strarray pathspec = {0};
     git_index *index = NULL;
     git_repository *repository = NULL;
 
     if (git2r_arg_check_string_vec(path))
-        git2r_error(git2r_err_string_vec_arg, __func__, "path");
+        git2r_error(__func__, NULL, "'path'", git2r_err_string_vec_arg);
+    if (git2r_arg_check_logical(force))
+        git2r_error(__func__, NULL, "'force'", git2r_err_logical_arg);
 
     repository= git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     /* Count number of non NA values */
     len = length(path);
@@ -70,11 +74,14 @@ SEXP git2r_index_add_all(SEXP repo, SEXP path)
             pathspec.strings[i] = (char *)CHAR(STRING_ELT(path, i));
 
     err = git_repository_index(&index, repository);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
-    err = git_index_add_all(index, &pathspec, 0, NULL, NULL);
-    if (GIT_OK != err)
+    if (LOGICAL(force)[0])
+        flags |= GIT_INDEX_ADD_FORCE;
+
+    err = git_index_add_all(index, &pathspec, flags, NULL, NULL);
+    if (err)
         goto cleanup;
 
     err = git_index_write(index);
@@ -89,8 +96,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -111,21 +118,21 @@ SEXP git2r_index_remove_bypath(SEXP repo, SEXP path)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_string_vec(path))
-        git2r_error(git2r_err_string_vec_arg, __func__, "path");
+        git2r_error(__func__, NULL, "'path'", git2r_err_string_vec_arg);
 
     repository= git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_repository_index(&index, repository);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     len = length(path);
     for (i = 0; i < len; i++) {
         if (NA_STRING != STRING_ELT(path, i)) {
             err = git_index_remove_bypath(index, CHAR(STRING_ELT(path, i)));
-            if (GIT_OK != err)
+            if (err)
                 goto cleanup;
         }
     }
@@ -139,8 +146,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }

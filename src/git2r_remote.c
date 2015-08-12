@@ -18,6 +18,7 @@
 
 #include <Rdefines.h>
 #include "git2.h"
+#include "common.h"
 
 #include "git2r_arg.h"
 #include "git2r_cred.h"
@@ -43,21 +44,22 @@ SEXP git2r_remote_add(SEXP repo, SEXP name, SEXP url)
     git_remote *remote = NULL;
 
     if (git2r_arg_check_string(name))
-        git2r_error(git2r_err_string_arg, __func__, "name");
+        git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
     if (git2r_arg_check_string(url))
-        git2r_error(git2r_err_string_arg, __func__, "url");
+        git2r_error(__func__, NULL, "'url'", git2r_err_string_arg);
 
     if (!git_remote_is_valid_name(CHAR(STRING_ELT(name, 0))))
-	git2r_error("Error in '%s': Invalid remote name", __func__, NULL);
+	git2r_error(__func__, NULL, git2r_err_invalid_remote, NULL);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    err = git_remote_create(&remote,
-			    repository,
-			    CHAR(STRING_ELT(name, 0)),
-			    CHAR(STRING_ELT(url, 0)));
+    err = git_remote_create(
+        &remote,
+        repository,
+        CHAR(STRING_ELT(name, 0)),
+        CHAR(STRING_ELT(url, 0)));
 
     if (remote)
 	git_remote_free(remote);
@@ -65,10 +67,46 @@ SEXP git2r_remote_add(SEXP repo, SEXP name, SEXP url)
     if (repository)
 	git_repository_free(repository);
 
-    if (GIT_OK != err)
-	git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+	git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
+}
+
+/**
+ * Each time a reference is updated locally, this function will be
+ * called with information about it.
+ *
+ * Based on the libgit2 network/fetch.c example.
+ *
+ * @refname The name of the remote
+ * @a The previous position of branch
+ * @b The new position of branch
+ * @data Callback data. Not used.
+ * @return 0
+ */
+static int git2r_update_tips_cb(
+    const char *refname,
+    const git_oid *a,
+    const git_oid *b,
+    void *data)
+{
+    char a_str[GIT_OID_HEXSZ + 1], b_str[GIT_OID_HEXSZ + 1];
+
+    GIT_UNUSED(data);
+
+    git_oid_fmt(b_str, b);
+    b_str[GIT_OID_HEXSZ] = '\0';
+
+    if (git_oid_iszero(a)) {
+        Rprintf("[new]     %.20s %s\n", b_str, refname);
+    } else {
+        git_oid_fmt(a_str, a);
+        a_str[GIT_OID_HEXSZ] = '\0';
+        Rprintf("[updated] %.10s..%.10s %s\n", a_str, b_str, refname);
+    }
+
+    return 0;
 }
 
 /**
@@ -91,31 +129,30 @@ SEXP git2r_remote_fetch(
     const git_transfer_progress *stats;
     git_remote *remote = NULL;
     git_repository *repository = NULL;
-    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+    git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
+    git2r_transfer_data payload = GIT2R_TRANSFER_DATA_INIT;
 
     if (git2r_arg_check_string(name))
-        git2r_error(git2r_err_string_arg, __func__, "name");
+        git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
     if (git2r_arg_check_credentials(credentials))
-        git2r_error(git2r_err_credentials_arg, __func__, "credentials");
+        git2r_error(__func__, NULL, "'credentials'", git2r_err_credentials_arg);
     if (git2r_arg_check_string(msg))
-        git2r_error(git2r_err_string_arg, __func__, "msg");
+        git2r_error(__func__, NULL, "'msg'", git2r_err_string_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_remote_lookup(&remote, repository, CHAR(STRING_ELT(name, 0)));
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
-    callbacks.credentials = &git2r_cred_acquire_cb;
-    callbacks.payload = credentials;
-    err = git_remote_set_callbacks(remote, &callbacks);
-    if (GIT_OK != err)
-        goto cleanup;
-
-    err = git_remote_fetch(remote, NULL,  CHAR(STRING_ELT(msg, 0)));
-    if (GIT_OK != err)
+    payload.credentials = credentials;
+    fetch_opts.callbacks.payload = &payload;
+    fetch_opts.callbacks.credentials = &git2r_cred_acquire_cb;
+    fetch_opts.callbacks.update_tips = &git2r_update_tips_cb;
+    err = git_remote_fetch(remote, NULL, &fetch_opts, CHAR(STRING_ELT(msg, 0)));
+    if (err)
         goto cleanup;
 
     stats = git_remote_stats(remote);
@@ -135,8 +172,12 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(
+            __func__,
+            giterr_last(),
+            git2r_err_unable_to_authenticate,
+            NULL);
 
     return result;
 }
@@ -157,10 +198,10 @@ SEXP git2r_remote_list(SEXP repo)
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_remote_list(&rem_list, repository);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     PROTECT(list = allocVector(STRSXP, rem_list.count));
@@ -176,8 +217,8 @@ cleanup:
     if (R_NilValue != list)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return list;
 }
@@ -197,19 +238,19 @@ SEXP git2r_remote_remove(SEXP repo, SEXP name)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_string(name))
-        git2r_error(git2r_err_string_arg, __func__, "name");
+        git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_remote_delete(repository, CHAR(STRING_ELT(name, 0)));
 
     if (repository)
 	git_repository_free(repository);
 
-    if (GIT_OK != err)
-	git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+	git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -229,20 +270,20 @@ SEXP git2r_remote_rename(SEXP repo, SEXP oldname, SEXP newname)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_string(oldname))
-        git2r_error(git2r_err_string_arg, __func__, "oldname");
+        git2r_error(__func__, NULL, "'oldname'", git2r_err_string_arg);
     if (git2r_arg_check_string(newname))
-        git2r_error(git2r_err_string_arg, __func__, "newname");
+        git2r_error(__func__, NULL, "'newname'", git2r_err_string_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     err = git_remote_rename(
         &problems,
         repository,
         CHAR(STRING_ELT(oldname, 0)),
         CHAR(STRING_ELT(newname, 0)));
-    if (GIT_OK != err)
+    if (err)
 	goto cleanup;
 
     git_strarray_free(&problems);
@@ -251,8 +292,8 @@ cleanup:
     if (repository)
 	git_repository_free(repository);
 
-    if (GIT_OK != err)
-	git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+	git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -276,11 +317,11 @@ SEXP git2r_remote_url(SEXP repo, SEXP remote)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_string_vec(remote))
-        git2r_error(git2r_err_string_vec_arg, __func__, "remote");
+        git2r_error(__func__, NULL, "'remote'", git2r_err_string_vec_arg);
 
     repository = git2r_repository_open(repo);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     len = LENGTH(remote);
     PROTECT(url = allocVector(STRSXP, len));
@@ -293,7 +334,7 @@ SEXP git2r_remote_url(SEXP repo, SEXP remote)
                 &tmp_remote,
                 repository,
                 CHAR(STRING_ELT(remote, i)));
-            if (GIT_OK != err)
+            if (err)
                 goto cleanup;
 
             SET_STRING_ELT(url, i, mkChar(git_remote_url(tmp_remote)));
@@ -307,8 +348,8 @@ cleanup:
 
     UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return url;
 }

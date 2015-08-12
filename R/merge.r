@@ -205,7 +205,6 @@ setMethod("merge",
 setMethod("merge",
           signature(x = "git_branch", y = "missing"),
           function(x,
-                   y,
                    ...,
                    commit_on_success = TRUE,
                    merger = default_signature(x@repo))
@@ -258,7 +257,7 @@ setMethod("merge",
 ##' }
 setMethod("show",
           signature(object = "git_merge_result"),
-          function (object)
+          function(object)
           {
               if (identical(object@up_to_date, TRUE)) {
                   cat("Already up-to-date")

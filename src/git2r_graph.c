@@ -43,14 +43,14 @@ SEXP git2r_graph_ahead_behind(SEXP local, SEXP upstream)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_commit(local))
-        git2r_error(git2r_err_commit_arg, __func__, "local");
+        git2r_error(__func__, NULL, "'local'", git2r_err_commit_arg);
     if (git2r_arg_check_commit(upstream))
-        git2r_error(git2r_err_commit_arg, __func__, "upstream");
+        git2r_error(__func__, NULL, "'upstream'", git2r_err_commit_arg);
 
     slot = GET_SLOT(local, Rf_install("repo"));
     repository = git2r_repository_open(slot);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     slot = GET_SLOT(local, Rf_install("sha"));
     git2r_oid_from_sha_sexp(slot, &local_oid);
@@ -60,7 +60,7 @@ SEXP git2r_graph_ahead_behind(SEXP local, SEXP upstream)
 
     err = git_graph_ahead_behind(&ahead, &behind, repository, &local_oid,
                                  &upstream_oid);
-    if (GIT_OK != err)
+    if (err)
         goto cleanup;
 
     PROTECT(result = allocVector(INTSXP, 2));
@@ -74,8 +74,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
@@ -97,14 +97,14 @@ SEXP git2r_graph_descendant_of(SEXP commit, SEXP ancestor)
     git_repository *repository = NULL;
 
     if (git2r_arg_check_commit(commit))
-        git2r_error(git2r_err_commit_arg, __func__, "commit");
+        git2r_error(__func__, NULL, "'commit'", git2r_err_commit_arg);
     if (git2r_arg_check_commit(ancestor))
-        git2r_error(git2r_err_commit_arg, __func__, "ancestor");
+        git2r_error(__func__, NULL, "'ancestor'", git2r_err_commit_arg);
 
     slot = GET_SLOT(commit, Rf_install("repo"));
     repository = git2r_repository_open(slot);
     if (!repository)
-        git2r_error(git2r_err_invalid_repository, __func__, NULL);
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
     slot = GET_SLOT(commit, Rf_install("sha"));
     git2r_oid_from_sha_sexp(slot, &commit_oid);
@@ -127,8 +127,8 @@ cleanup:
     if (R_NilValue != result)
         UNPROTECT(1);
 
-    if (GIT_OK != err)
-        git2r_error(git2r_err_from_libgit2, __func__, giterr_last()->message);
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
 }
