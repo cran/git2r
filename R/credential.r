@@ -16,7 +16,11 @@
 
 ##' Create a new environmental credential object
 ##'
+##' Environmental variables can be written to the file
+##' \code{.Renviron}. This file is read by \emph{R} during startup,
+##' see \code{\link[base]{Startup}}.
 ##' @rdname cred_env-methods
+##' @family git credential functions
 ##' @param username The name of the environmental variable that holds
 ##' the username for the authentication.
 ##' @param password The name of the environmental variable that holds
@@ -26,8 +30,9 @@
 ##' @examples
 ##' \dontrun{
 ##' ## Create an environmental credential object for the username and
-##' ## and a personal access token (PAT).
-##' cred <- cred_env("GITHUB_USER", "GITHUB_PAT")
+##' ## password.
+##' cred <- cred_env("NAME_OF_ENV_VARIABLE_WITH_USERNAME",
+##'                  "NAME_OF_ENV_VARIABLE_WITH_PASSWORD")
 ##' repo <- repository("git2r")
 ##' push(repo, credentials = cred)
 ##' }
@@ -49,9 +54,39 @@ setMethod("cred_env",
           }
 )
 
+##' Create a new personal access token credential object
+##'
+##' The personal access token is stored in an envrionmental variable.
+##' Environmental variables can be written to the file
+##' \code{.Renviron}. This file is read by \emph{R} during startup,
+##' see \code{\link[base]{Startup}}. On GitHub, personal access tokens
+##' function like ordinary OAuth access tokens. They can be used
+##' instead of a password for Git over HTTPS, see
+##' \url{https://help.github.com/articles/creating-an-access-token-for-command-line-use/}
+##' @family git credential functions
+##' @param token The name of the environmental variable that holds the
+##' personal access token for the authentication. Defualt is
+##' \code{GITHUB_PAT}.
+##' @return A S4 \code{cred_token} object
+##' @export
+##' @examples
+##' \dontrun{
+##' ## Create a personal access token credential object.
+##' ## This example assumes that the token is stored in
+##' ## the 'GITHUB_PAT' environmental variable.
+##' repo <- repository("git2r")
+##' cred <- cred_token()
+##' push(repo, credentials = cred)
+##' }
+cred_token <- function(token = "GITHUB_PAT")
+{
+    new("cred_token", token = token)
+}
+
 ##' Create a new plain-text username and password credential object
 ##'
 ##' @rdname cred_user_pass-methods
+##' @family git credential functions
 ##' @param username The username of the credential
 ##' @param password The password of the credential
 ##' @return A S4 \code{cred_user_pass} object
@@ -81,48 +116,29 @@ setMethod("cred_user_pass",
 
 ##' Create a new passphrase-protected ssh key credential object
 ##'
-##' @rdname cred_ssh_key-methods
-##' @param publickey The path to the public key of the credential
-##' @param privatekey The path to the private key of the credential
-##' @param passphrase The passphrase of the credential
+##' @family git credential functions
+##' @param publickey The path to the public key of the
+##' credential. Default is \code{'~/.ssh/id_rsa.pub'}
+##' @param privatekey The path to the private key of the
+##' credential. Default is \code{'~/.ssh/id_rsa'}
+##' @param passphrase The passphrase of the credential. Default is
+##' \code{character(0)}
 ##' @return A S4 \code{cred_ssh_key} object
-##' @keywords methods
+##' @export
 ##' @examples
 ##' \dontrun{
 ##' ## Create a ssh key credential object. It can optionally be
 ##' ## passphrase-protected
-##' cred_ssh_key("~/.ssh/id_rsa.pub", "~/.ssh/id_rsa")
+##' cred <- cred_ssh_key("~/.ssh/id_rsa.pub", "~/.ssh/id_rsa")
+##' repo <- repository("git2r")
+##' push(repo, credentials = cred)
 ##' }
-setGeneric("cred_ssh_key",
-           signature = c("publickey", "privatekey", "passphrase"),
-           function(publickey, privatekey, passphrase)
-           standardGeneric("cred_ssh_key"))
-
-##' @rdname cred_ssh_key-methods
-##' @export
-setMethod("cred_ssh_key",
-          signature(publickey  = "character",
-                    privatekey = "character",
-                    passphrase = "character"),
-          function(publickey, privatekey, passphrase)
-          {
-              new("cred_ssh_key",
-                  publickey  = normalizePath(publickey, mustWork = TRUE),
-                  privatekey = normalizePath(privatekey, mustWork = TRUE),
-                  passphrase = passphrase)
-          }
-)
-
-##' @rdname cred_ssh_key-methods
-##' @export
-setMethod("cred_ssh_key",
-          signature(publickey  = "character",
-                    privatekey = "character",
-                    passphrase = "missing"),
-          function(publickey, privatekey)
-          {
-              callGeneric(publickey  = publickey,
-                          privatekey = privatekey,
-                          passphrase = character(0))
-          }
-)
+cred_ssh_key <- function(publickey  = "~/.ssh/id_rsa.pub",
+                         privatekey = "~/.ssh/id_rsa",
+                         passphrase = character(0))
+{
+    new("cred_ssh_key",
+        publickey  = normalizePath(publickey, mustWork = TRUE),
+        privatekey = normalizePath(privatekey, mustWork = TRUE),
+        passphrase = passphrase)
+}

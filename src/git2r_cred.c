@@ -20,6 +20,7 @@
 #include <Rinternals.h>
 #include <Rdefines.h>
 
+#include "buffer.h"
 #include "common.h"
 
 #include "git2r_cred.h"
@@ -93,6 +94,11 @@ static int git2r_cred_env(
         if (err)
             goto cleanup;
 
+        if (!git_buf_len(&username)) {
+            err = -1;
+            goto cleanup;
+        }
+
         /* Read value of the password environment variable */
         err = git__getenv(&password,
                           CHAR(STRING_ELT(
@@ -100,6 +106,11 @@ static int git2r_cred_env(
                                             Rf_install("password")), 0)));
         if (err)
             goto cleanup;
+
+        if (!git_buf_len(&password)) {
+            err = -1;
+            goto cleanup;
+        }
 
         err = git_cred_userpass_plaintext_new(
             cred,
@@ -109,6 +120,45 @@ static int git2r_cred_env(
     cleanup:
         git_buf_free(&username);
         git_buf_free(&password);
+
+        if (err)
+            return -1;
+
+        return 0;
+    }
+
+    return -1;
+}
+
+/**
+ * Create credential object from S4 class 'cred_token'.
+ *
+ * @param cred The newly created credential object.
+ * @param allowed_types A bitmask stating which cred types are OK to return.
+ * @param credentials The S4 class object with credentials.
+ * @return 0 on success, else -1.
+ */
+static int git2r_cred_token(
+    git_cred **cred,
+    unsigned int allowed_types,
+    SEXP credentials)
+{
+    if (GIT_CREDTYPE_USERPASS_PLAINTEXT & allowed_types) {
+        int err;
+        git_buf token = GIT_BUF_INIT;
+
+        /* Read value of the personal access token from the
+         * environment variable */
+        err = git__getenv(&token,
+                          CHAR(STRING_ELT(GET_SLOT(credentials,
+                                                   Rf_install("token")), 0)));
+        if (err)
+            goto cleanup;
+
+        err = git_cred_userpass_plaintext_new(cred, " ", git_buf_cstr(&token));
+
+    cleanup:
+        git_buf_free(&token);
 
         if (err)
             return -1;
@@ -195,6 +245,8 @@ int git2r_cred_acquire_cb(
             cred, username_from_url, allowed_types, credentials);
     } else if (strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_env") == 0) {
         return git2r_cred_env(cred, allowed_types, credentials);
+    } else if (strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_token") == 0) {
+        return git2r_cred_token(cred, allowed_types, credentials);
     } else if (strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_user_pass") == 0) {
         return git2r_cred_user_pass(cred, allowed_types, credentials);
     }

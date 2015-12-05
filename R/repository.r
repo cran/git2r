@@ -191,6 +191,8 @@ setMethod("repository",
 
               if (discover) {
                   path <- discover_repository(path)
+                  if (is.null(path))
+                      stop("The 'path' is not in a git repository")
               } else {
                   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
                   if (!file.info(path)$isdir)
@@ -264,8 +266,9 @@ setMethod("init",
 ##' @param bare Create a bare repository. Default is FALSE.
 ##' @param branch The name of the branch to checkout. Default is NULL
 ##' which means to use the remote's default branch.
-##' @param credentials The credentials for remote repository access. Default
-##' is NULL.
+##' @param credentials The credentials for remote repository
+##' access. Default is NULL. To use and query an ssh-agent for the ssh
+##' key credentials, let this parameter be NULL (the default).
 ##' @param progress Show progress. Default is TRUE.
 ##' @return A S4 \code{\linkS4class{git_repository}} object
 ##' @seealso \code{\linkS4class{cred_user_pass}},
@@ -994,13 +997,19 @@ setMethod("workdir",
 
 ##' Find path to repository for any file
 ##'
-##' libgit's git_discover_repository is used to identify the location of the
-##'   repository. The path will therefore be terminated by a file separator.
+##' libgit's git_discover_repository is used to identify the location
+##' of the repository. The path will therefore be terminated by a file
+##' separator.
 ##' @rdname discover_repository-methods
 ##' @docType methods
 ##' @param path A character vector specifying the path to a file or folder
-##' @return Character vector with path to repository or NULL if this cannot be
-##'   established.
+##' @param ceiling The defult is to not use the ceiling argument and
+##' start the lookup from path and walk across parent
+##' directories. When ceiling is 0, the lookup is only in path. When
+##' ceiling is 1, the lookup is in both the path and the parent to
+##' path.
+##' @return Character vector with path to repository or NULL if this
+##' cannot be established.
 ##' @keywords methods
 ##' @examples
 ##' \dontrun{
@@ -1024,19 +1033,51 @@ setMethod("workdir",
 ##'
 ##' ## Find the path to the repository using the path to the second file
 ##' discover_repository(file_2)
+##'
+##' ## Demonstrate the 'ceiling' argument
+##' wd <- workdir(repo)
+##' dir.create(file.path(wd, "temp"))
+##'
+##' ## Lookup repository in 'file.path(wd, "temp")'. Should return NULL
+##' discover_repository(file.path(wd, "temp"), ceiling = 0)
+##'
+##' ## Lookup repository in parent to 'file.path(wd, "temp")'.
+##' ## Should not return NULL
+##' discover_repository(file.path(wd, "temp"), ceiling = 1)
 ##' }
 setGeneric("discover_repository",
-           signature = "path",
-           function(path)
+           signature = c("path", "ceiling"),
+           function(path, ceiling)
            standardGeneric("discover_repository"))
 
 ##' @rdname discover_repository-methods
 ##' @export
 setMethod("discover_repository",
-          signature(path = "character"),
+          signature(path = "character", ceiling = "missing"),
           function(path)
           {
-              .Call(git2r_repository_discover, path)
+              path <- normalizePath(path)
+              .Call(git2r_repository_discover, path, NULL)
+          }
+)
+
+##' @rdname discover_repository-methods
+##' @export
+setMethod("discover_repository",
+          signature(path = "character", ceiling = "numeric"),
+          function(path, ceiling)
+          {
+              ceiling <- as.integer(ceiling)
+              if (identical(ceiling, 0L)) {
+                  ceiling <- normalizePath(path)
+              } else if (identical(ceiling, 1L)) {
+                  ceiling <- dirname(dirname(normalizePath(path)))
+              } else {
+                  stop("'ceiling' must be either 0 or 1")
+              }
+
+              path <- normalizePath(path)
+              .Call(git2r_repository_discover, path, ceiling)
           }
 )
 

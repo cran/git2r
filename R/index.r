@@ -19,10 +19,10 @@
 ##' @rdname add-methods
 ##' @docType methods
 ##' @param repo The repository \code{object}.
-##' @param path character vector with filenames to add. The path must
-##' be relative to the repository's working folder. Only non-ignored
-##' files are added. If path is a directory, files in sub-folders are
-##' added (if non-ignored)
+##' @param path Character vector with file names or shell glob
+##' patterns that will matched against files in the repository's
+##' working directory. Each file that matches will be added to the
+##' index (either updating an existing entry or adding a new entry).
 ##' @param ... Additional arguments to the method
 ##' @param force Add ignored files. Default is FALSE.
 ##' @return invisible(NULL)
@@ -39,15 +39,47 @@
 ##' config(repo, user.name="Alice", user.email="alice@@example.org")
 ##'
 ##' ## Create a file
-##' writeLines("Hello world!", file.path(path, "file-to-add.txt"))
+##' writeLines("a", file.path(path, "a.txt"))
 ##'
-##' ## Add file to repository
-##' add(repo, "file-to-add.txt")
+##' ## Add file to repository and view status
+##' add(repo, "a.txt")
+##' status(repo)
 ##'
-##' ## View status of repository
+##' ## Add file with a leading './' when the repository working
+##' ## directory is the current working directory
+##' setwd(path)
+##' writeLines("b", file.path(path, "b.txt"))
+##' add(repo, "./b.txt")
+##' status(repo)
+##'
+##' ## Add a file in a sub-folder with sub-folder as the working
+##' ## directory. Create a file in the root of the repository
+##' ## working directory that will remain untracked.
+##' dir.create(file.path(path, "sub_dir"))
+##' setwd("./sub_dir")
+##' writeLines("c", file.path(path, "c.txt"))
+##' writeLines("c", file.path(path, "sub_dir/c.txt"))
+##' add(repo, "c.txt")
+##' status(repo)
+##'
+##' ## Add files with glob expansion when the current working
+##' ## directory is outside the repository's working directory.
+##' setwd(tempdir())
+##' dir.create(file.path(path, "glob_dir"))
+##' writeLines("d", file.path(path, "glob_dir/d.txt"))
+##' writeLines("e", file.path(path, "glob_dir/e.txt"))
+##' writeLines("f", file.path(path, "glob_dir/f.txt"))
+##' writeLines("g", file.path(path, "glob_dir/g.md"))
+##' add(repo, "glob_dir/*txt")
+##' status(repo)
+##'
+##' ## Add file with glob expansion with a relative path when
+##' ## the current working directory is inside the repository's
+##' ## working directory.
+##' setwd(path)
+##' add(repo, "./glob_dir/*md")
 ##' status(repo)
 ##' }
-##'
 setGeneric("add",
            signature = c("repo", "path"),
            function(repo, path, ...)
@@ -60,7 +92,50 @@ setMethod("add",
                     path = "character"),
           function(repo, path, force = FALSE)
           {
+              ## Documentation for the pathspec argument in the
+              ## libgit2 function 'git_index_add_all' that git2r use
+              ## internally:
+              ##
+              ## The pathspec is a list of file names or shell glob
+              ## patterns that will matched against files in the
+              ## repository's working directory. Each file that
+              ## matches will be added to the index (either updating
+              ## an existing entry or adding a new entry).
+
+              repo_wd <- normalizePath(workdir(repo), winslash = "/")
+              if (!length(grep("/$", repo_wd)))
+                  repo_wd <- paste0(repo_wd, "/")
+
+              path <- sapply(path, function(p) {
+                  np <- suppressWarnings(normalizePath(p, winslash = "/"))
+
+                  ## Check if the normalized path is a non-file e.g. a
+                  ## glob.
+                  if (!file.exists(np)) {
+                      ## Check if the normalized path starts with a
+                      ## leading './'
+                      if (length(grep("^[.]/", np))) {
+                          nd <- suppressWarnings(normalizePath(dirname(p),
+                                                               winslash = "/"))
+                          if (!length(grep("/$", nd)))
+                              nd <- paste0(nd, "/")
+                          np <- paste0(nd, basename(np))
+                      }
+                  }
+
+                  ## Check if the file is in the repository's working
+                  ## directory, else let libgit2 handle this path
+                  ## unmodified.
+                  if (!length(grep(paste0("^", repo_wd), np)))
+                      return(p)
+
+                  ## Change the path to be relative to the repository's
+                  ## working directory. Substitute common prefix with ""
+                  sub(paste0("^", repo_wd), "", np)
+              })
+
               .Call(git2r_index_add_all, repo, path, force)
+
               invisible(NULL)
           }
 )

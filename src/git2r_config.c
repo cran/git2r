@@ -23,7 +23,7 @@
 #include "git2r_error.h"
 #include "git2r_repository.h"
 
-#define GIT2R_N_CONFIG_LEVELS 6
+#define GIT2R_N_CONFIG_LEVELS 7
 
 /**
  * Count number of config variables by level
@@ -53,23 +53,26 @@ static int git2r_config_count_variables(
         }
 
         switch (entry->level) {
-        case GIT_CONFIG_LEVEL_SYSTEM:
+        case GIT_CONFIG_LEVEL_PROGRAMDATA:
             n_level[0]++;
             break;
-        case GIT_CONFIG_LEVEL_XDG:
+        case GIT_CONFIG_LEVEL_SYSTEM:
             n_level[1]++;
             break;
-        case GIT_CONFIG_LEVEL_GLOBAL:
+        case GIT_CONFIG_LEVEL_XDG:
             n_level[2]++;
             break;
-        case GIT_CONFIG_LEVEL_LOCAL:
+        case GIT_CONFIG_LEVEL_GLOBAL:
             n_level[3]++;
             break;
-        case GIT_CONFIG_LEVEL_APP:
+        case GIT_CONFIG_LEVEL_LOCAL:
             n_level[4]++;
             break;
-        case GIT_CONFIG_HIGHEST_LEVEL:
+        case GIT_CONFIG_LEVEL_APP:
             n_level[5]++;
+            break;
+        case GIT_CONFIG_HIGHEST_LEVEL:
+            n_level[6]++;
             break;
         default:
             giterr_set_str(GITERR_CONFIG,
@@ -176,12 +179,13 @@ static int git2r_config_list_variables(
     if (err)
         goto cleanup;
 
-    i = git2r_config_list_init(list, 0, n_level, i_list, i, "system");
-    i = git2r_config_list_init(list, 1, n_level, i_list, i, "xdg");
-    i = git2r_config_list_init(list, 2, n_level, i_list, i, "global");
-    i = git2r_config_list_init(list, 3, n_level, i_list, i, "local");
-    i = git2r_config_list_init(list, 4, n_level, i_list, i, "app");
-    i = git2r_config_list_init(list, 5, n_level, i_list, i, "highest");
+    i = git2r_config_list_init(list, 0, n_level, i_list, i, "programdata");
+    i = git2r_config_list_init(list, 1, n_level, i_list, i, "system");
+    i = git2r_config_list_init(list, 2, n_level, i_list, i, "xdg");
+    i = git2r_config_list_init(list, 3, n_level, i_list, i, "global");
+    i = git2r_config_list_init(list, 4, n_level, i_list, i, "local");
+    i = git2r_config_list_init(list, 5, n_level, i_list, i, "app");
+    i = git2r_config_list_init(list, 6, n_level, i_list, i, "highest");
 
     for (;;) {
         git_config_entry *entry;
@@ -193,23 +197,26 @@ static int git2r_config_list_variables(
         }
 
         switch (entry->level) {
-        case GIT_CONFIG_LEVEL_SYSTEM:
+        case GIT_CONFIG_LEVEL_PROGRAMDATA:
             git2r_config_list_add_entry(list, 0, i_level, i_list, entry);
             break;
-        case GIT_CONFIG_LEVEL_XDG:
+        case GIT_CONFIG_LEVEL_SYSTEM:
             git2r_config_list_add_entry(list, 1, i_level, i_list, entry);
             break;
-        case GIT_CONFIG_LEVEL_GLOBAL:
+        case GIT_CONFIG_LEVEL_XDG:
             git2r_config_list_add_entry(list, 2, i_level, i_list, entry);
             break;
-        case GIT_CONFIG_LEVEL_LOCAL:
+        case GIT_CONFIG_LEVEL_GLOBAL:
             git2r_config_list_add_entry(list, 3, i_level, i_list, entry);
             break;
-        case GIT_CONFIG_LEVEL_APP:
+        case GIT_CONFIG_LEVEL_LOCAL:
             git2r_config_list_add_entry(list, 4, i_level, i_list, entry);
             break;
-        case GIT_CONFIG_HIGHEST_LEVEL:
+        case GIT_CONFIG_LEVEL_APP:
             git2r_config_list_add_entry(list, 5, i_level, i_list, entry);
+            break;
+        case GIT_CONFIG_HIGHEST_LEVEL:
+            git2r_config_list_add_entry(list, 6, i_level, i_list, entry);
             break;
         default:
             giterr_set_str(GITERR_CONFIG,
@@ -240,13 +247,19 @@ SEXP git2r_config_get(SEXP repo)
     git_config *cfg = NULL;
     git_repository *repository = NULL;
 
-    repository = git2r_repository_open(repo);
-    if (!repository)
-        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
+    if (repo != R_NilValue) {
+        repository = git2r_repository_open(repo);
+        if (!repository)
+            git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    err = git_repository_config(&cfg, repository);
-    if (err)
-        goto cleanup;
+        err = git_repository_config(&cfg, repository);
+        if (err)
+            goto cleanup;
+    } else {
+        err = git_config_open_default(&cfg);
+        if (err)
+            goto cleanup;
+    }
 
     err = git2r_config_count_variables(cfg, n_level);
     if (err)
@@ -300,13 +313,19 @@ SEXP git2r_config_set(SEXP repo, SEXP variables)
 
     n = length(variables);
     if (n) {
-        repository = git2r_repository_open(repo);
-        if (!repository)
-            git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
+        if (repo != R_NilValue) {
+            repository = git2r_repository_open(repo);
+            if (!repository)
+                git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-        err = git_repository_config(&cfg, repository);
-        if (err)
-            goto cleanup;
+            err = git_repository_config(&cfg, repository);
+            if (err)
+                goto cleanup;
+        } else {
+            err = git_config_open_default(&cfg);
+            if (err)
+                goto cleanup;
+        }
 
         names = getAttrib(variables, R_NamesSymbol);
         for (i = 0; i < n; i++) {

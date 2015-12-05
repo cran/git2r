@@ -17,70 +17,92 @@
 ##' Config
 ##'
 ##' Config file management. To display the configuration variables,
-##' call method \code{config} with only the \code{repo} argument.
-##' @rdname config-methods
-##' @docType methods
-##' @param repo the \code{repo} to configure
-##' @param user.name the user name. Use NULL to delete the entry
-##' @param user.email the e-mail address. Use NULL to delete the entry
-##' @return S3 class \code{git_config} with the configuration
-##' @keywords methods
-##' @include S4_classes.r
+##' call method \code{config} without the \code{user.name},
+##' \code{user.email} or \code{...} options.
+##'
+##' There are two ways git2r can find the local repository when
+##' writing local options (1) Use the \code{repo} argument. (2) If the
+##' \code{repo} argument is \code{NULL} but the current working
+##' directory is inside the local repository, then \code{git2r} uses
+##' that repository.
+##' @param repo The \code{repository}. Default is NULL.
+##' @param global Write option(s) to global configuration
+##' file. Default is FALSE.
+##' @param user.name The user name. Use NULL to delete the entry
+##' @param user.email The e-mail address. Use NULL to delete the entry
+##' @param ... Additional options to write or delete from the
+##' configuration.
+##' @return S3 class \code{git_config}. When writing options, the
+##' configuration is returned invisible.
+##' @export
 ##' @examples \dontrun{
 ##' ## Initialize a temporary repository
-##' path <- tempfile(pattern="git2r-")
+##' path <- tempfile(pattern = "git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
 ##'
-##' ## Set user name and email. The configuration is returned
-##' cfg <-config(repo, user.name="Alice", user.email="alice@@example.org")
-##'
-##' ## View configuration list
-##' cfg
+##' ## Set user name and email.
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Display configuration
 ##' config(repo)
-##'}
-setGeneric("config",
-           signature = "repo",
-           function(repo,
-                    user.name,
-                    user.email)
-           standardGeneric("config"))
+##'
+##' ## Delete user email.
+##' config(repo, user.email = NULL)
+##'
+##' ## Display configuration
+##' config(repo)
+##' }
+config <- function(repo = NULL, global = FALSE, user.name, user.email, ...)
+{
+    if (is.null(repo)) {
+        repo <- discover_repository(getwd())
+        if (!is.null(repo))
+            repo <- repository(repo)
+    }
 
-##' @rdname config-methods
-##' @export
-setMethod("config",
-          signature(repo = "git_repository"),
-          function(repo,
-                   user.name,
-                   user.email)
-          {
-              variables <- as.list(match.call(expand.dots = TRUE))
-              variables <- variables[-(1:2)]
+    ## Check that 'global' is either TRUE or FALSE
+    stopifnot(any(identical(global, TRUE), identical(global, FALSE)))
 
-              if (length(variables)) {
-                  ## Check that the variable is either a character vector or NULL
-                  check_is_character <- sapply(variables, function(v) {
-                      any(is.character(v), is.null(v))
-                  })
-                  check_is_character <- check_is_character[!check_is_character]
-                  if (length(check_is_character)) {
-                      stop(sprintf("\n%s", paste(names(check_is_character),
-                                                 "must be character",
-                                                 collapse="\n")))
-                  }
+    variables <- list(...)
+    if (!missing(user.name))
+        variables <- c(variables, list(user.name = user.name))
 
-                  .Call(git2r_config_set, repo, variables)
-              }
+    if (!missing(user.email))
+        variables <- c(variables, list(user.email = user.email))
 
-              cfg <- .Call(git2r_config_get, repo)
+    if (length(variables)) {
+        for (i in seq_len(length(variables))) {
+            if (!is.null(variables[[i]])) {
+                if (!is.character(variables[[i]])) {
+                    stop(paste0("'",
+                                names(variables)[i],
+                                "' must be a character vector"))
+                }
+            }
+        }
 
-              ## Sort the variables within levels by name
-              structure(lapply(cfg, function(x) x[order(names(x))]),
-                        class = "git_config")
-          }
-)
+        if (identical(global, TRUE)) {
+            repo <- NULL
+        } else if (is.null(repo)) {
+            stop("Unable to locate local repository")
+        }
+
+        .Call(git2r_config_set, repo, variables)
+    }
+
+    cfg <- .Call(git2r_config_get, repo)
+
+    ## Sort the variables within levels by name
+    cfg <- structure(lapply(cfg, function(x) x[order(names(x))]),
+                     class = "git_config")
+
+    if (length(variables)) {
+        invisible(cfg)
+    } else {
+        return(cfg)
+    }
+}
 
 ##' @export
 print.git_config <- function(x, ...) {

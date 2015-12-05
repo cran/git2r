@@ -24,7 +24,6 @@
 ##'   }
 ##' }
 ##' @rdname git_repository-class
-##' @docType class
 ##' @keywords classes
 ##' @section Methods:
 ##' \describe{
@@ -40,7 +39,7 @@ setClass("git_repository",
 
              can_open <- .Call(git2r_repository_can_open, object@path)
              if (!identical(can_open, TRUE))
-                 errors <- c(errors, "Invalid repository")
+                 errors <- c(errors, "Unable to open repository at 'path'")
 
              if (length(errors) == 0) TRUE else errors
          }
@@ -62,7 +61,6 @@ setClass("git_repository",
 ##' @aliases coerce,git_time,character-method
 ##' @aliases coerce,git_time,POSIXct-method
 ##' @aliases show,git_time-method
-##' @docType class
 ##' @keywords classes
 ##' @section Methods:
 ##' \describe{
@@ -102,7 +100,6 @@ setClass("git_time",
 ##'   }
 ##' }
 ##' @name git_signature-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -142,13 +139,31 @@ setClass("git_signature",
 ##'   }
 ##' }
 ##' @rdname cred_env-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
 setClass("cred_env",
          slots = c(username = "character",
                    password = "character")
+)
+
+##' Class \code{"cred_token"}
+##'
+##' @title S4 class to handle a personal access token credential
+##' object
+##' @section Slots:
+##' \describe{
+##'   \item{token}{
+##'     The name of the environmental variable that holds
+##'     the personal access token for the authentication.
+##'   }
+##' }
+##' @rdname cred_token-class
+##' @keywords classes
+##' @keywords methods
+##' @export
+setClass("cred_token",
+         slots = c(token = "character")
 )
 
 ##' Class \code{"cred_user_pass"}
@@ -165,7 +180,6 @@ setClass("cred_env",
 ##'   }
 ##' }
 ##' @rdname cred_user_pass-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -191,7 +205,6 @@ setClass("cred_user_pass",
 ##'   }
 ##' }
 ##' @rdname cred_ssh_key-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -217,7 +230,6 @@ setClass("cred_ssh_key",
 ##'   }
 ##' }
 ##' @rdname git_blame-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -273,7 +285,6 @@ setClass("git_blame",
 ##'   }
 ##' }
 ##' @rdname git_blame_hunk-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -308,7 +319,6 @@ setClass("git_blame_hunk",
 ##'   }
 ##' }
 ##' @rdname git_blob-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -338,7 +348,6 @@ setClass("git_blob",
 ##'   }
 ##' }
 ##' @name git_branch-class
-##' @docType class
 ##' @keywords classes
 ##' @section Methods:
 ##' \describe{
@@ -379,7 +388,6 @@ setClass("git_branch",
 ##'   }
 ##' }
 ##' @name git_commit-class
-##' @docType class
 ##' @keywords classes
 ##' @section Methods:
 ##' \describe{
@@ -412,7 +420,6 @@ setClass("git_commit",
 ##'   }
 ##' }
 ##' @name git_diff-class
-##' @docType class
 ##' @keywords classes
 ##' @export
 setClass("git_diff",
@@ -437,7 +444,6 @@ setClass("git_diff",
 ##'   }
 ##' }
 ##' @name git_diff_file-class
-##' @docType class
 ##' @keywords classes
 ##' @export
 setClass("git_diff_file",
@@ -469,7 +475,6 @@ setClass("git_diff_file",
 ##'   }
 ##' }
 ##' @name git_diff_hunk-class
-##' @docType class
 ##' @keywords classes
 ##' @export
 setClass("git_diff_hunk",
@@ -501,7 +506,6 @@ setClass("git_diff_hunk",
 ##'   }
 ##' }
 ##' @name git_diff_line-class
-##' @docType class
 ##' @keywords classes
 ##' @export
 setClass("git_diff_line",
@@ -535,7 +539,6 @@ setClass("git_diff_line",
 ##'   }
 ##' }
 ##' @name git_note-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -570,7 +573,6 @@ setClass("git_note",
 ##'   }
 ##' }
 ##' @rdname git_reference-class
-##' @docType class
 ##' @keywords classes
 ##' @section Methods:
 ##' \describe{
@@ -612,7 +614,6 @@ setClass("git_reference",
 ##'   }
 ##' }
 ##' @name git_reflog_entry-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -628,7 +629,6 @@ setClass("git_reflog_entry",
 ##'
 ##' @title S4 class to handle a git stash
 ##' @name git_stash-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -659,7 +659,6 @@ setClass("git_stash", contains = "git_commit")
 ##'   }
 ##' }
 ##' @name git_tag-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -715,7 +714,6 @@ setClass("git_tag",
 ##'   }
 ##' }
 ##' @name git_tree-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -766,7 +764,6 @@ setClass("git_tree",
 ##'   }
 ##' }
 ##' @name git_transfer_progress-class
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -802,7 +799,6 @@ setClass("git_transfer_progress",
 ##'   }
 ##' }
 ##' @rdname git_fetch_head
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export
@@ -835,7 +831,6 @@ setClass("git_fetch_head",
 ##'   }
 ##' }
 ##' @rdname git_merge_result
-##' @docType class
 ##' @keywords classes
 ##' @keywords methods
 ##' @export

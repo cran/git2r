@@ -16,32 +16,22 @@
 
 library(git2r)
 
-##
 ## Create a directory in tempdir
-##
 path <- tempfile(pattern="git2r-")
 dir.create(path)
 
-##
 ## Initialize a repository
-##
 repo <- init(path)
 config(repo, user.name="Alice", user.email="alice@example.org")
 
-##
 ## Create a file
-##
 writeLines("Hello world!", file.path(path, "test.txt"))
 
-##
 ## Add and commit
-##
 add(repo, "test.txt")
 commit_1 <- commit(repo, "Commit message")
 
-##
 ## Add a remote
-##
 remote_add(repo, "playground",
            "https://github.com/gaborcsardi/playground")
 
@@ -49,23 +39,32 @@ stopifnot(identical(remotes(repo), "playground"))
 stopifnot(identical(remote_url(repo, "playground"),
                     "https://github.com/gaborcsardi/playground"))
 
-##
 ## Rename a remote
-##
 remote_rename(repo, "playground", "foobar")
 
 stopifnot(identical(remotes(repo), "foobar"))
 stopifnot(identical(remote_url(repo, "foobar"),
                     "https://github.com/gaborcsardi/playground"))
 
-##
+## Set remote url
+remote_set_url(repo, "foobar", "https://github.com/stewid/playground")
+stopifnot(identical(remote_url(repo, "foobar"),
+                    "https://github.com/stewid/playground"))
+
 ## Remove a remote
-##
 remote_remove(repo, "foobar")
 
 stopifnot(identical(remotes(repo), character(0)))
 
-##
+if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+    refs <- remote_ls("https://github.com/ropensci/git2r")
+    stopifnot(length(refs) > 0)
+    stopifnot(names(refs) > 0)
+    stopifnot(any(names(refs) == "HEAD"))
+}
+
+# an invalid URL should throw an error
+tools::assertError(remote_ls("bad"))
+
 ## Cleanup
-##
 unlink(path, recursive=TRUE)

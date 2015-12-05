@@ -4,11 +4,11 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
-#ifndef INCLUDE_filediff_h__
-#define INCLUDE_filediff_h__
+#ifndef INCLUDE_transaction_h__
+#define INCLUDE_transaction_h__
 
-#include "xdiff/xdiff.h"
+#include "common.h"
 
-#include "git2/merge.h"
+int git_transaction_config_new(git_transaction **out, git_config *cfg);
 
 #endif

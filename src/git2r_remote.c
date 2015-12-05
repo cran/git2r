@@ -299,6 +299,44 @@ cleanup:
 }
 
 /**
+ * Set the remote's url in the configuration
+ *
+ * This assumes the common case of a single-url remote and
+ * will otherwise raise an error.
+ * @param repo S4 class git_repository
+ * @param name The name of the remote
+ * @param url The url to set
+ * @return R_NilValue
+ */
+SEXP git2r_remote_set_url(SEXP repo, SEXP name, SEXP url)
+{
+    int err;
+    git_repository *repository = NULL;
+
+    if (git2r_arg_check_string(name))
+        git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
+    if (git2r_arg_check_string(url))
+        git2r_error(__func__, NULL, "'url'", git2r_err_string_arg);
+
+    repository = git2r_repository_open(repo);
+    if (!repository)
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
+
+    err = git_remote_set_url(
+        repository,
+        CHAR(STRING_ELT(name, 0)),
+        CHAR(STRING_ELT(url, 0)));
+
+    if (repository)
+	git_repository_free(repository);
+
+    if (err)
+	git2r_error(__func__, giterr_last(), NULL, NULL);
+
+    return R_NilValue;
+}
+
+/**
  * Get the remote's url
  *
  * @param repo S4 class git_repository
@@ -352,4 +390,77 @@ cleanup:
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return url;
+}
+
+/**
+ * Get the remote's url
+ *
+ * Based on https://github.com/libgit2/libgit2/blob/babdc376c7/examples/network/ls-remote.c
+ * @param repo S4 class git_repository
+ * @param name Character vector with URL of remote.
+ * @return Character vector for each reference with the associated commit IDs.
+ */
+SEXP git2r_remote_ls(SEXP name, SEXP repo, SEXP credentials)
+{
+    const char *name_ = NULL;
+    SEXP result = R_NilValue;
+    SEXP names = R_NilValue;
+    git_remote *remote = NULL;
+    int err;
+    const git_remote_head **refs;
+    size_t refs_len, i;
+    git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+    git2r_transfer_data payload = GIT2R_TRANSFER_DATA_INIT;
+    git_repository *repository = NULL;
+
+    if (git2r_arg_check_string(name))
+        git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
+    if (git2r_arg_check_credentials(credentials))
+        git2r_error(__func__, NULL, "'credentials'", git2r_err_credentials_arg);
+
+    repository = git2r_repository_open(repo);
+    if (!repository)
+        git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
+
+    name_ = CHAR(STRING_ELT(name, 0));
+    err = git_remote_lookup(&remote, repository, name_);
+    if (err) {
+        err = git_remote_create_anonymous(&remote, repository, name_);
+        if (err)
+            goto cleanup;
+    }
+
+    payload.credentials = credentials;
+    callbacks.payload = &payload;
+    callbacks.credentials = &git2r_cred_acquire_cb;
+
+    err = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, NULL);
+    if (err)
+        goto cleanup;
+
+    err = git_remote_ls(&refs, &refs_len, remote);
+    if (err)
+        goto cleanup;
+
+    PROTECT(result = allocVector(STRSXP, refs_len));
+    setAttrib(result, R_NamesSymbol, names = allocVector(STRSXP, refs_len));
+
+    for (i = 0; i < refs_len; i++) {
+        char oid[GIT_OID_HEXSZ + 1] = {0};
+        git_oid_fmt(oid, &refs[i]->oid);
+        SET_STRING_ELT(result, i, mkChar(oid));
+        SET_STRING_ELT(names, i, mkChar(refs[i]->name));
+    }
+
+cleanup:
+    if (repository)
+        git_repository_free(repository);
+
+    if (result != R_NilValue)
+        UNPROTECT(1);
+
+    if (err)
+        git2r_error(__func__, giterr_last(), NULL, NULL);
+
+    return(result);
 }

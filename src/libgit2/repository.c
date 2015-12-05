@@ -585,7 +585,8 @@ static int load_config(
 	git_repository *repo,
 	const char *global_config_path,
 	const char *xdg_config_path,
-	const char *system_config_path)
+	const char *system_config_path,
+	const char *programdata_path)
 {
 	int error;
 	git_buf config_path = GIT_BUF_INIT;
@@ -626,6 +627,12 @@ static int load_config(
 		error != GIT_ENOTFOUND)
 		goto on_error;
 
+	if (programdata_path != NULL &&
+		(error = git_config_add_file_ondisk(
+			cfg, programdata_path, GIT_CONFIG_LEVEL_PROGRAMDATA, 0)) < 0 &&
+		error != GIT_ENOTFOUND)
+		goto on_error;
+
 	giterr_clear(); /* clear any lingering ENOTFOUND errors */
 
 	*out = cfg;
@@ -651,11 +658,13 @@ int git_repository_config__weakptr(git_config **out, git_repository *repo)
 		git_buf global_buf = GIT_BUF_INIT;
 		git_buf xdg_buf = GIT_BUF_INIT;
 		git_buf system_buf = GIT_BUF_INIT;
+		git_buf programdata_buf = GIT_BUF_INIT;
 		git_config *config;
 
 		git_config_find_global(&global_buf);
 		git_config_find_xdg(&xdg_buf);
 		git_config_find_system(&system_buf);
+		git_config_find_programdata(&programdata_buf);
 
 		/* If there is no global file, open a backend for it anyway */
 		if (git_buf_len(&global_buf) == 0)
@@ -665,7 +674,8 @@ int git_repository_config__weakptr(git_config **out, git_repository *repo)
 			&config, repo,
 			path_unless_empty(&global_buf),
 			path_unless_empty(&xdg_buf),
-			path_unless_empty(&system_buf));
+			path_unless_empty(&system_buf),
+			path_unless_empty(&programdata_buf));
 		if (!error) {
 			GIT_REFCOUNT_OWN(config, repo);
 
@@ -679,6 +689,7 @@ int git_repository_config__weakptr(git_config **out, git_repository *repo)
 		git_buf_free(&global_buf);
 		git_buf_free(&xdg_buf);
 		git_buf_free(&system_buf);
+		git_buf_free(&programdata_buf);
 	}
 
 	*out = repo->_config;
@@ -908,12 +919,28 @@ bool git_repository__reserved_names(
 			buf->size = git_repository__reserved_names_win32[i].size;
 		}
 
-		/* Try to add any repo-specific reserved names */
+		/* Try to add any repo-specific reserved names - the gitlink file
+		 * within a submodule or the repository (if the repository directory
+		 * is beneath the workdir).  These are typically `.git`, but should
+		 * be protected in case they are not.  Note, repo and workdir paths
+		 * are always prettified to end in `/`, so a prefixcmp is safe.
+		 */
 		if (!repo->is_bare) {
-			const char *reserved_path = repo->path_gitlink ?
-				repo->path_gitlink : repo->path_repository;
+			int (*prefixcmp)(const char *, const char *);
+			int error, ignorecase;
 
-			if (reserved_names_add8dot3(repo, reserved_path) < 0)
+			error = git_repository__cvar(
+				&ignorecase, repo, GIT_CVAR_IGNORECASE);
+			prefixcmp = (error || ignorecase) ? git__prefixcmp_icase :
+				git__prefixcmp;
+
+			if (repo->path_gitlink &&
+				reserved_names_add8dot3(repo, repo->path_gitlink) < 0)
+				goto on_error;
+
+			if (repo->path_repository &&
+				prefixcmp(repo->path_repository, repo->workdir) == 0 &&
+				reserved_names_add8dot3(repo, repo->path_repository) < 0)
 				goto on_error;
 		}
 	}
@@ -1279,7 +1306,7 @@ static int repo_write_template(
 
 #ifdef GIT_WIN32
 	if (!error && hidden) {
-		if (git_win32__sethidden(path.ptr) < 0)
+		if (git_win32__set_hidden(path.ptr, true) < 0)
 			error = -1;
 	}
 #else
@@ -1373,7 +1400,7 @@ static int repo_init_structure(
 	/* Hide the ".git" directory */
 #ifdef GIT_WIN32
 	if ((opts->flags & GIT_REPOSITORY_INIT__HAS_DOTGIT) != 0) {
-		if (git_win32__sethidden(repo_dir) < 0) {
+		if (git_win32__set_hidden(repo_dir, true) < 0) {
 			giterr_set(GITERR_OS,
 				"Failed to mark Git repository folder as hidden");
 			return -1;
@@ -1441,8 +1468,8 @@ static int repo_init_structure(
 			if (chmod)
 				mkdir_flags |= GIT_MKDIR_CHMOD;
 
-			error = git_futils_mkdir(
-				tpl->path, repo_dir, dmode, mkdir_flags);
+			error = git_futils_mkdir_relative(
+				tpl->path, repo_dir, dmode, mkdir_flags, NULL);
 		}
 		else if (!external_tpl) {
 			const char *content = tpl->content;
@@ -1464,7 +1491,7 @@ static int mkdir_parent(git_buf *buf, uint32_t mode, bool skip2)
 	 * don't try to set gid or grant world write access
 	 */
 	return git_futils_mkdir(
-		buf->ptr, NULL, mode & ~(S_ISGID | 0002),
+		buf->ptr, mode & ~(S_ISGID | 0002),
 		GIT_MKDIR_PATH | GIT_MKDIR_VERIFY_DIR |
 		(skip2 ? GIT_MKDIR_SKIP_LAST2 : GIT_MKDIR_SKIP_LAST));
 }
@@ -1568,14 +1595,14 @@ static int repo_init_directories(
 		/* create path #4 */
 		if (wd_path->size > 0 &&
 			(error = git_futils_mkdir(
-				wd_path->ptr, NULL, dirmode & ~S_ISGID,
+				wd_path->ptr, dirmode & ~S_ISGID,
 				GIT_MKDIR_VERIFY_DIR)) < 0)
 			return error;
 
 		/* create path #2 (if not the same as #4) */
 		if (!natural_wd &&
 			(error = git_futils_mkdir(
-				repo_path->ptr, NULL, dirmode & ~S_ISGID,
+				repo_path->ptr, dirmode & ~S_ISGID,
 				GIT_MKDIR_VERIFY_DIR | GIT_MKDIR_SKIP_LAST)) < 0)
 			return error;
 	}
@@ -1585,7 +1612,7 @@ static int repo_init_directories(
 		has_dotgit)
 	{
 		/* create path #1 */
-		error = git_futils_mkdir(repo_path->ptr, NULL, dirmode,
+		error = git_futils_mkdir(repo_path->ptr, dirmode,
 			GIT_MKDIR_VERIFY_DIR | ((dirmode & S_ISGID) ? GIT_MKDIR_CHMOD : 0));
 	}
 
