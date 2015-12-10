@@ -1,5 +1,5 @@
 # git2r, R bindings to the libgit2 library.
-# Copyright (C) 2013-2014 The git2r contributors
+# Copyright (C) 2013-2015 The git2r contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2,
@@ -29,15 +29,7 @@ AC_DEFUN([AC_PROG_PKGCONFIG], [AC_CHECK_PROG(PKGCONFIG,pkg-config,yes)])
 AC_PROG_PKGCONFIG
 
 # Handle optional include and library paths
-GIT2R_CPPFLAGS="-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -I. -Ilibgit2 -Ilibgit2/include -Ihttp-parser"
-
-# Include and use regex on solaris
-case "${host_os}" in
-  solaris*)
-    GIT2R_CPPFLAGS="${GIT2R_CPPFLAGS} -Iregex"
-    GIT2R_SRC_REGEX=regex/regex.o
-    ;;
-esac
+GIT2R_CPPFLAGS=
 
 # zlib include and library path
 AC_ARG_WITH([zlib-include],
@@ -117,6 +109,8 @@ CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CPPFLAGS="${GIT2R_CPPFLAGS} ${CPPFLAGS}"
+LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+CPICFLAGS=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
 
 # Check for zlib
 have_zlib=no
@@ -133,38 +127,24 @@ if test "x${have_zlib}" = xno; then
 fi
 
 # Check for SSL
-case "${host_os}" in
-    darwin*)
-        # On OS X, use Security and CoreFoundation framework
-        CPPFLAGS="${CPPFLAGS} ${SECURITY_INCLUDE_DIR} -DGIT_SECURE_TRANSPORT -DGIT_COMMON_CRYPTO"
-        LIBS="${LIBS} -framework Security -framework CoreFoundation"
-        GIT2R_SRC_LIBGIT2_STREAM=libgit2/stransport_stream.o
-    ;;
-    *)
-        # Check for OpenSSL
-        have_ssl=no
-        if test "x${OPENSSL_INCLUDES}" = x; then :; else
-            CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
-        fi
-        AC_SEARCH_LIBS([EVP_EncryptInit], [crypto],
-        [
-            AC_SEARCH_LIBS([SSL_library_init], [ssl], [have_ssl=yes])
-        ])
+have_ssl=no
+if test "x${OPENSSL_INCLUDES}" = x; then :; else
+        CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
+fi
+AC_SEARCH_LIBS([EVP_EncryptInit], [crypto],
+    [
+        AC_SEARCH_LIBS([SSL_library_init], [ssl], [have_ssl=yes])
+    ])
 
-        # Specify sha1 implementation
-        if test "x${have_ssl}" = xyes; then
-            CPPFLAGS="${CPPFLAGS} -DGIT_OPENSSL -DOPENSSL_SHA1"
-        else
-            AC_MSG_FAILURE([
+if test "x${have_ssl}" = xno; then
+    AC_MSG_FAILURE([
   ---------------------------------------------
    OpenSSL library required
 
    Please install:
    libssl-dev (deb) or openssl-devel (rpm)
   ---------------------------------------------])
-        fi
-    ;;
-esac
+fi
 
 # Check for LibSSH2
 have_ssh2=no
@@ -172,9 +152,8 @@ if test "x${PKGCONFIG}" = xyes; then
     AC_MSG_CHECKING([whether pkg-config could find libssh2])
     if pkg-config --exists libssh2; then
         AC_MSG_RESULT([yes])
-        libssh2_cppflags=`pkg-config --cflags libssh2`
-        GIT2R_LIBSSH2=`pkg-config --libs libssh2`
-        CPPFLAGS="${libssh2_cppflags} ${CPPFLAGS} -DGIT_SSH"
+        LIBSSH2_CPPFLAGS=`pkg-config --cflags libssh2`
+        LIBSSH2_LIBS=`pkg-config --libs libssh2`
         have_ssh2=yes
     fi
 else
@@ -192,40 +171,26 @@ if test "x${have_ssh2}" = xno; then
     # Static linking of LibSSH2 on OSX to support redistributable binary packages
     case "${host_os}" in
         darwin*)
-            # Check for Homebrew in path
-            case "${PATH}" in
-                *brew*)
-                    BREW_OPENSSL=`brew --prefix openssl`
-                    CPPFLAGS="${CPPFLAGS} -I${BREW_OPENSSL}/include"
-                    LDFLAGS="${LDFLAGS} -L${BREW_OPENSSL}/lib"
-                ;;
-            esac
-
             # Download and build libssh2
-            mkdir -p libssh2 && curl -fsSL https://github.com/libssh2/libssh2/releases/download/libssh2-1.6.0/libssh2-1.6.0.tar.gz | tar xz --strip 1 -C libssh2
+            mkdir -p libssh2 && curl -fsSL \
+                https://github.com/libssh2/libssh2/releases/download/libssh2-1.6.0/libssh2-1.6.0.tar.gz \
+                | tar xz --strip 1 -C libssh2
             mkdir -p src/libssh2
-            GIT2R_LIBSSH2_INST_DIR="${PWD}/src/libssh2"
-            export CPPFLAGS
-            export LDFLAGS
+            LIBSSH2_INST_DIR="${PWD}/src/libssh2"
             cp -f tools/missing libssh2
             cd libssh2
-            ./configure --with-pic --disable-examples-build --disable-shared --enable-static --prefix=$GIT2R_LIBSSH2_INST_DIR \
+            ./configure --with-pic --with-openssl --disable-examples-build \
+                --disable-shared --enable-static \
+                --prefix=$LIBSSH2_INST_DIR CC="${CC}" \
+                CFLAGS="${CFLAGS} ${CPICFLAGS} -Wno-deprecated-declarations" \
+                CPPFLAGS="${CPPFLAGS}" LDFLAGS=${LDFLAGS} \
                 && make && make install && have_ssh2=yes
             cd ..
+            rm -rf libssh2
 
             if test "x${have_ssh2}" = xyes; then
-                have_ssh2=no
-                if test "x${PKGCONFIG}" = xyes; then
-                    AC_MSG_CHECKING([whether pkg-config could find libssh2])
-                    export=PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${GIT2R_LIBSSH2_INST_DIR}/lib/pkgconfig"
-                    export PKG_CONFIG_PATH
-                    if pkg-config --exists libssh2; then
-                        AC_MSG_RESULT([yes])
-                        GIT2R_LIBSSH2=`pkg-config --libs --static libssh2`
-                        CPPFLAGS="${CPPFLAGS} -DGIT_SSH -Ilibssh2/include"
-                        have_ssh2=yes
-                    fi
-                fi
+                LIBSSH2_CPPFLAGS="-Ilibssh2/include"
+                LIBSSH2_LIBS="-Llibssh2/lib -lssh2"
             fi
         ;;
     esac
@@ -243,15 +208,13 @@ if test "x${have_ssh2}" = xno; then
 fi
 
 # Check for iconv
+have_iconv=no
 case "${host_os}" in
   darwin*)
-        have_iconv=no
         AC_SEARCH_LIBS([iconv_open], [iconv], [have_iconv=yes])
 
-        if test "x${have_iconv}" = xyes; then
-                CPPFLAGS="${CPPFLAGS} -DGIT_USE_ICONV"
-        else
-                AC_MSG_FAILURE([iconv library required])
+        if test "x${have_iconv}" = xno; then
+            AC_MSG_FAILURE([iconv library required])
         fi
     ;;
 esac
@@ -259,9 +222,46 @@ esac
 # Configuration specific for solaris
 case "${host_os}" in
   solaris*)
-    CPPFLAGS="${CPPFLAGS} -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__ -D_POSIX_PTHREAD_SEMANTICS"
     AC_SEARCH_LIBS(connect, [socket])
     AC_SEARCH_LIBS(gethostbyname, [nsl socket])
+
+    # Include and use regex on solaris
+    CPPFLAGS="-Iregex ${CPPFLAGS}"
+    GIT2R_SRC_REGEX=regex/regex.o
+    ;;
+esac
+
+# Add include paths for git2r
+CPPFLAGS="-I. -Ilibgit2 -Ilibgit2/include -Ihttp-parser ${CPPFLAGS}"
+
+# Add definitions
+CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DGIT_OPENSSL"
+
+# Specify sha1 implementation
+case "${host_os}" in
+  darwin*)
+        PKG_CFLAGS="-Wno-deprecated-declarations"
+        CPPFLAGS="${CPPFLAGS} -DGIT_COMMON_CRYPTO"
+  ;;
+  *)
+        CPPFLAGS="${CPPFLAGS} -DOPENSSL_SHA1"
+  ;;
+esac
+
+# Add definitions for ssh
+if test "x${have_ssh2}" = xyes; then
+    CPPFLAGS="${CPPFLAGS} ${LIBSSH2_CPPFLAGS} -DGIT_SSH"
+fi
+
+# Add definition for iconv
+if test "x${have_iconv}" = xyes; then
+    CPPFLAGS="${CPPFLAGS} -DGIT_USE_ICONV"
+fi
+
+# Add definitions specific for solaris
+case "${host_os}" in
+  solaris*)
+    CPPFLAGS="${CPPFLAGS} -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__ -D_POSIX_PTHREAD_SEMANTICS"
     ;;
 esac
 
@@ -304,9 +304,9 @@ AC_FUNC_MMAP
 AC_FUNC_REALLOC
 AC_CHECK_FUNCS([btowc clock_gettime getcwd gethostbyname gettimeofday isascii memchr memmove memset munmap pstat_getdynamic re_comp realpath regcomp select socket strcasecmp strchr strcspn strdup strerror strncasecmp strrchr strspn strstr strtol strtoul])
 
-AC_SUBST(GIT2R_SRC_LIBGIT2_STREAM)
 AC_SUBST(GIT2R_SRC_REGEX)
-AC_SUBST(GIT2R_LIBSSH2)
+AC_SUBST(LIBSSH2_LIBS)
+AC_SUBST(PKG_CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LIBS)
 
