@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2016 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -21,9 +21,16 @@
 ##' @param repo the repository
 ##' @param name the remote's name
 ##' @param credentials The credentials for remote repository
-##' access. Default is NULL. To use and query an ssh-agent for the ssh
-##' key credentials, let this parameter be NULL (the default).
-##' @return invisible \code{\linkS4class{git_transfer_progress}} object
+##'     access. Default is NULL. To use and query an ssh-agent for the
+##'     ssh key credentials, let this parameter be NULL (the default).
+##' @param verbose Print information each time a reference is updated
+##'     locally. Default is \code{TRUE}.
+##' @param refspec The refs to fetch and which local refs to update,
+##'     see examples. Pass NULL to use the
+##'     \code{remote.<repository>.fetch} variable. Default is
+##'     \code{NULL}.
+##' @return invisible \code{\linkS4class{git_transfer_progress}}
+##'     object
 ##' @keywords methods
 ##' @include S4_classes.r
 ##' @examples
@@ -58,24 +65,37 @@
 ##'
 ##' ## List updated heads
 ##' fetch_heads(repo_2)
+##'
+##' ## Checking out GitHub pull requests locally
+##' path <- tempfile(pattern="ghit-")
+##' repo <- clone("https://github.com/leeper/ghit", path)
+##' fetch(repo, "origin", refspec = "pull/13/head:refs/heads/BRANCHNAME")
+##' checkout(repo, "BRANCHNAME")
+##' summary(repo)
 ##' }
 setGeneric("fetch",
            signature = "repo",
-           function(repo, name, credentials = NULL)
+           function(repo,
+                    name,
+                    credentials = NULL,
+                    verbose     = TRUE,
+                    refspec     = NULL)
            standardGeneric("fetch"))
 
 ##' @rdname fetch-methods
 ##' @export
 setMethod("fetch",
           signature(repo = "git_repository"),
-          function(repo, name, credentials)
+          function(repo, name, credentials, verbose, refspec)
           {
               result <- .Call(
                   git2r_remote_fetch,
                   repo,
                   name,
                   credentials,
-                  "fetch")
+                  "fetch",
+                  verbose,
+                  refspec)
 
               invisible(result)
           }

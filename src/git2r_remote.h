@@ -27,7 +27,9 @@ SEXP git2r_remote_fetch(
     SEXP repo,
     SEXP name,
     SEXP credentials,
-    SEXP msg);
+    SEXP msg,
+    SEXP verbose,
+    SEXP refspecs);
 SEXP git2r_remote_list(SEXP repo);
 SEXP git2r_remote_remove(SEXP repo, SEXP remote);
 SEXP git2r_remote_rename(SEXP repo, SEXP oldname, SEXP newname);

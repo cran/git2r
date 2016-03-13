@@ -6,9 +6,10 @@
 \alias{fetch,git_repository-method}
 \title{Fetch new data and update tips}
 \usage{
-fetch(repo, name, credentials = NULL)
+fetch(repo, name, credentials = NULL, verbose = TRUE, refspec = NULL)
 
-\S4method{fetch}{git_repository}(repo, name, credentials = NULL)
+\S4method{fetch}{git_repository}(repo, name, credentials = NULL,
+  verbose = TRUE, refspec = NULL)
 }
 \arguments{
 \item{repo}{the repository}
@@ -16,11 +17,20 @@ fetch(repo, name, credentials = NULL)
 \item{name}{the remote's name}
 
 \item{credentials}{The credentials for remote repository
-access. Default is NULL. To use and query an ssh-agent for the ssh
-key credentials, let this parameter be NULL (the default).}
+access. Default is NULL. To use and query an ssh-agent for the
+ssh key credentials, let this parameter be NULL (the default).}
+
+\item{verbose}{Print information each time a reference is updated
+locally. Default is \code{TRUE}.}
+
+\item{refspec}{The refs to fetch and which local refs to update,
+see examples. Pass NULL to use the
+\code{remote.<repository>.fetch} variable. Default is
+\code{NULL}.}
 }
 \value{
-invisible \code{\linkS4class{git_transfer_progress}} object
+invisible \code{\linkS4class{git_transfer_progress}}
+    object
 }
 \description{
 Fetch new data and update tips
@@ -57,6 +67,13 @@ fetch(repo_2, "origin")
 
 ## List updated heads
 fetch_heads(repo_2)
+
+## Checking out GitHub pull requests locally
+path <- tempfile(pattern="ghit-")
+repo <- clone("https://github.com/leeper/ghit", path)
+fetch(repo, "origin", refspec = "pull/13/head:refs/heads/BRANCHNAME")
+checkout(repo, "BRANCHNAME")
+summary(repo)
 }
 }
 \keyword{methods}
