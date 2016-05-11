@@ -732,7 +732,8 @@ int git_odb_exists_prefix(
 				git_oid_cpy(out, short_id);
 			return 0;
 		} else {
-			return git_odb__error_notfound("no match for id prefix", short_id);
+			return git_odb__error_notfound(
+				"no match for id prefix", short_id, len);
 		}
 	}
 
@@ -747,7 +748,7 @@ int git_odb_exists_prefix(
 		error = odb_exists_prefix_1(out, db, &key, len, true);
 
 	if (error == GIT_ENOTFOUND)
-		return git_odb__error_notfound("no match for id prefix", &key);
+		return git_odb__error_notfound("no match for id prefix", &key, len);
 
 	return error;
 }
@@ -888,7 +889,7 @@ int git_odb_read(git_odb_object **out, git_odb *db, const git_oid *id)
 		error = odb_read_1(out, db, id, true);
 
 	if (error == GIT_ENOTFOUND)
-		return git_odb__error_notfound("no match for id", id);
+		return git_odb__error_notfound("no match for id", id, GIT_OID_HEXSZ);
 
 	return error;
 }
@@ -974,7 +975,7 @@ int git_odb_read_prefix(
 		error = read_prefix_1(out, db, &key, len, true);
 
 	if (error == GIT_ENOTFOUND)
-		return git_odb__error_notfound("no match for prefix", &key);
+		return git_odb__error_notfound("no match for prefix", &key, len);
 
 	return error;
 }
@@ -1230,12 +1231,14 @@ int git_odb_refresh(struct git_odb *db)
 	return 0;
 }
 
-int git_odb__error_notfound(const char *message, const git_oid *oid)
+int git_odb__error_notfound(
+	const char *message, const git_oid *oid, size_t oid_len)
 {
 	if (oid != NULL) {
 		char oid_str[GIT_OID_HEXSZ + 1];
-		git_oid_tostr(oid_str, sizeof(oid_str), oid);
-		giterr_set(GITERR_ODB, "Object not found - %s (%s)", message, oid_str);
+		git_oid_tostr(oid_str, oid_len, oid);
+		giterr_set(GITERR_ODB, "Object not found - %s (%.*s)",
+			message, oid_len, oid_str);
 	} else
 		giterr_set(GITERR_ODB, "Object not found - %s", message);
 

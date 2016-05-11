@@ -49,6 +49,10 @@ stopifnot(identical(commits(repo)[[1]]@author@name, "Alice"))
 stopifnot(identical(commits(repo)[[1]]@author@email, "alice@example.org"))
 stopifnot(identical(parents(commit_1), list()))
 
+## Check is_commit
+stopifnot(identical(is_commit(commit_1), TRUE))
+stopifnot(identical(is_commit(5), FALSE))
+
 ## Commit without adding changes should produce an error
 tools::assertError(commit(repo, "Test to commit"))
 
@@ -104,6 +108,12 @@ stopifnot(identical(length(commits(repo, n = 2)), 2L))
 tools::assertError(commits(repo, n = 2.2))
 tools::assertError(commits(repo, n = "2"))
 
+## Check to coerce repository to data.frame
+df <- as(repo, "data.frame")
+stopifnot(identical(dim(df), c(4L, 6L)))
+stopifnot(identical(names(df), c("sha", "summary", "message",
+                                 "author", "email", "when")))
+
 ## Set working directory to path and check commits
 setwd(path)
 stopifnot(identical(length(commits()), 4L))
@@ -111,6 +121,37 @@ stopifnot(identical(length(commits(n = -1)), 4L))
 stopifnot(identical(length(commits(n = 2)), 2L))
 tools::assertError(commits(n = 2.2))
 tools::assertError(commits(n = "2"))
+
+## Check plot method
+plot_file <- tempfile(fileext = ".pdf")
+pdf(plot_file)
+plot(repo)
+dev.off()
+stopifnot(file.exists(plot_file))
+unlink(plot_file)
+
+## Check punch card plot method
+punch_card_plot_file <- tempfile(fileext = ".pdf")
+pdf(punch_card_plot_file)
+punch_card(repo)
+dev.off()
+stopifnot(file.exists(punch_card_plot_file))
+unlink(punch_card_plot_file)
+
+## Check that 'git2r_arg_check_commit' raise error
+res <- tools::assertError(.Call(git2r:::git2r_commit_tree, NULL))
+stopifnot(length(grep("'commit' must be a S4 class git_commit",
+                      res[[1]]$message)) > 0)
+res <- tools::assertError(.Call(git2r:::git2r_commit_tree, 3))
+stopifnot(length(grep("'commit' must be a S4 class git_commit",
+                      res[[1]]$message)) > 0)
+res <- tools::assertError(.Call(git2r:::git2r_commit_tree, repo))
+stopifnot(length(grep("'commit' must be a S4 class git_commit",
+                      res[[1]]$message)) > 0)
+commit_1@sha <- NA_character_
+res <- tools::assertError(.Call(git2r:::git2r_commit_tree, commit_1))
+stopifnot(length(grep("'commit' must be a S4 class git_commit",
+                      res[[1]]$message)) > 0)
 
 ## Cleanup
 unlink(path, recursive=TRUE)

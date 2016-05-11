@@ -50,6 +50,10 @@ stopifnot(identical(length(branches(repo)), 2L))
 stopifnot(identical(branch_target(branches(repo)[[1]]),
                     branch_target(branches(repo)[[2]])))
 
+## Check is_branch
+stopifnot(identical(is_branch(b), TRUE))
+stopifnot(identical(is_branch(5), FALSE))
+
 ## Add one more commit
 writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "test.txt"))
 add(repo, "test.txt")
@@ -66,6 +70,31 @@ tools::assertError(branch_create(commit.2, name = "test"))
 b <- branch_create(commit.2, name = "test", force = TRUE)
 stopifnot(identical(branch_target(branches(repo)[[1]]),
                     branch_target(branches(repo)[[2]])))
+
+## Test arguments
+res <- tools::assertError(.Call(git2r:::git2r_branch_delete, NULL))
+stopifnot(length(grep("'branch' must be a S4 class git_branch",
+                      res[[1]]$message)) > 0)
+res <- tools::assertError(.Call(git2r:::git2r_branch_delete, 3))
+stopifnot(length(grep("'branch' must be a S4 class git_branch",
+                      res[[1]]$message)) > 0)
+res <- tools::assertError(.Call(git2r:::git2r_branch_delete, repo))
+stopifnot(length(grep("'branch' must be a S4 class git_branch",
+                      res[[1]]$message)) > 0)
+b_tmp <- b
+b_tmp@name <- NA_character_
+res <- tools::assertError(.Call(git2r:::git2r_branch_delete, b_tmp))
+stopifnot(length(grep("'branch' must be a S4 class git_branch",
+                      res[[1]]$message)) > 0)
+b_tmp <- b
+b_tmp@type <- NA_integer_
+res <- tools::assertError(.Call(git2r:::git2r_branch_delete, b_tmp))
+stopifnot(length(grep("'branch' must be a S4 class git_branch",
+                      res[[1]]$message)) > 0)
+b_tmp@type <- 3L
+res <- tools::assertError(.Call(git2r:::git2r_branch_delete, b_tmp))
+stopifnot(length(grep("'branch' must be a S4 class git_branch",
+                      res[[1]]$message)) > 0)
 
 ## Delete branch
 branch_delete(b)
