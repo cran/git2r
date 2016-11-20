@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2016 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -904,7 +904,7 @@ setMethod("summary",
               n_authors <- length(unique(sapply(lapply(work, slot, "author"),
                                                 slot, "name")))
 
-              s <- .Call(git2r_status_list, object, TRUE, TRUE, TRUE, TRUE)
+              s <- .Call(git2r_status_list, object, TRUE, TRUE, TRUE, FALSE, TRUE)
               n_ignored <- length(s$ignored)
               n_untracked <- length(s$untracked)
               n_unstaged <- length(s$unstaged)
@@ -1048,8 +1048,7 @@ setMethod("discover_repository",
           signature(path = "character", ceiling = "missing"),
           function(path)
           {
-              path <- normalizePath(path)
-              .Call(git2r_repository_discover, path, NULL)
+              callGeneric(path = path, ceiling = as.numeric(NA))
           }
 )
 
@@ -1059,16 +1058,22 @@ setMethod("discover_repository",
           signature(path = "character", ceiling = "numeric"),
           function(path, ceiling)
           {
-              ceiling <- as.integer(ceiling)
-              if (identical(ceiling, 0L)) {
-                  ceiling <- normalizePath(path)
-              } else if (identical(ceiling, 1L)) {
-                  ceiling <- dirname(dirname(normalizePath(path)))
+              path <- normalizePath(path)
+
+              if (is.na(ceiling)) {
+                  ceiling <- NULL
               } else {
-                  stop("'ceiling' must be either 0 or 1")
+                  ceiling <- as.integer(ceiling)
+                  if (identical(ceiling, 0L)) {
+                      ceiling <- dirname(path)
+                  } else if (identical(ceiling, 1L)) {
+                      ceiling <- dirname(dirname(path))
+                  } else {
+                      stop("'ceiling' must be either 0 or 1")
+                  }
               }
 
-              path <- normalizePath(path)
+
               .Call(git2r_repository_discover, path, ceiling)
           }
 )

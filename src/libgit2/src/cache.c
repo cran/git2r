@@ -43,6 +43,11 @@ int git_cache_set_max_object_size(git_otype type, size_t size)
 	return 0;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
+
 void git_cache_dump_stats(git_cache *cache)
 {
 	git_cached_obj *object;
@@ -63,6 +68,10 @@ void git_cache_dump_stats(git_cache *cache)
 		);
 	});
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
 
 int git_cache_init(git_cache *cache)
 {

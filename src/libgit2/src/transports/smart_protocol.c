@@ -50,7 +50,7 @@ int git_smart__store_refs(transport_smart *t, int flushes)
 			if ((recvd = gitno_recv(buf)) < 0)
 				return recvd;
 
-			if (recvd == 0 && !flush) {
+			if (recvd == 0) {
 				giterr_set(GITERR_NET, "early EOF");
 				return GIT_EEOF;
 			}
@@ -222,8 +222,12 @@ static int recv_pkt(git_pkt **out, gitno_buffer *buf)
 		if (error < 0 && error != GIT_EBUFS)
 			return error;
 
-		if ((ret = gitno_recv(buf)) < 0)
+		if ((ret = gitno_recv(buf)) < 0) {
 			return ret;
+		} else if (ret == 0) {
+			giterr_set(GITERR_NET, "early EOF");
+			return GIT_EEOF;
+		}
 	} while (error);
 
 	gitno_consume(buf, line_end);
@@ -640,6 +644,11 @@ done:
 	return error;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
+
 static int gen_pktline(git_buf *buf, git_push *push)
 {
 	push_spec *spec;
@@ -680,6 +689,10 @@ static int gen_pktline(git_buf *buf, git_push *push)
 	git_buf_puts(buf, "0000");
 	return git_buf_oom(buf) ? -1 : 0;
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
 
 static int add_push_report_pkt(git_push *push, git_pkt *pkt)
 {
@@ -759,6 +772,14 @@ static int add_push_report_sideband_pkt(git_push *push, git_pkt_data *data_pkt, 
 		line_len -= (line_end - line);
 		line = line_end;
 
+		/* When a valid packet with no content has been
+		 * read, git_pkt_parse_line does not report an
+		 * error, but the pkt pointer has not been set.
+		 * Handle this by skipping over empty packets.
+		 */
+		if (pkt == NULL)
+			continue;
+
 		error = add_push_report_pkt(push, pkt);
 
 		git_pkt_free(pkt);
@@ -812,6 +833,9 @@ static int parse_report(transport_smart *transport, git_push *push)
 		gitno_consume(buf, line_end);
 
 		error = 0;
+
+		if (pkt == NULL)
+			continue;
 
 		switch (pkt->type) {
 			case GIT_PKT_DATA:

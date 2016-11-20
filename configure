@@ -3796,6 +3796,62 @@ if test "$ac_res" != no; then :
   have_ssl=yes
 fi
 
+                { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing OPENSSL_init_ssl" >&5
+$as_echo_n "checking for library containing OPENSSL_init_ssl... " >&6; }
+if ${ac_cv_search_OPENSSL_init_ssl+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char OPENSSL_init_ssl ();
+int
+main ()
+{
+return OPENSSL_init_ssl ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ssl; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_OPENSSL_init_ssl=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_OPENSSL_init_ssl+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_OPENSSL_init_ssl+:} false; then :
+
+else
+  ac_cv_search_OPENSSL_init_ssl=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_OPENSSL_init_ssl" >&5
+$as_echo "$ac_cv_search_OPENSSL_init_ssl" >&6; }
+ac_res=$ac_cv_search_OPENSSL_init_ssl
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  have_ssl=yes
+fi
+
 fi
 
 
@@ -5929,9 +5985,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-if test "x$ac_cv_sizeof_voidp" == "x8"; then
+if test "x$ac_cv_sizeof_voidp" = "x8"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
-elif test "x$ac_cv_sizeof_voidp" == "x4"; then
+elif test "x$ac_cv_sizeof_voidp" = "x4"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
 else
     { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
@@ -5941,22 +5997,60 @@ See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 # Checks for structures
-ac_fn_c_check_member "$LINENO" "struct stat" "st_atimespec" "ac_cv_member_struct_stat_st_atimespec" "#ifdef HAVE_SYS_TYPES_H
-                  # include <sys/types.h>
-                  #endif
-                  #ifdef HAVE_SYS_STAT_H
-                  # include <sys/stat.h>
-                  #endif
+ac_fn_c_check_member "$LINENO" "struct stat" "st_mtim" "ac_cv_member_struct_stat_st_mtim" "#ifdef HAVE_SYS_TYPES_H
+                 # include <sys/types.h>
+                 #endif
+                 #ifdef HAVE_SYS_STAT_H
+                 # include <sys/stat.h>
+                 #endif
 "
-if test "x$ac_cv_member_struct_stat_st_atimespec" = xyes; then :
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_STRUCT_STAT_ST_ATIMESPEC 1
-_ACEOF
-
-CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_ATIMESPEC"
+if test "x$ac_cv_member_struct_stat_st_mtim" = xyes; then :
+  CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIM"
 fi
 
+
+ac_fn_c_check_member "$LINENO" "struct stat" "st_mtimespec" "ac_cv_member_struct_stat_st_mtimespec" "#ifdef HAVE_SYS_TYPES_H
+                 # include <sys/types.h>
+                 #endif
+                 #ifdef HAVE_SYS_STAT_H
+                 # include <sys/stat.h>
+                 #endif
+"
+if test "x$ac_cv_member_struct_stat_st_mtimespec" = xyes; then :
+  CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIMESPEC"
+fi
+
+
+ac_fn_c_check_member "$LINENO" "struct stat" "st_mtime_nsec" "ac_cv_member_struct_stat_st_mtime_nsec" "#ifdef HAVE_SYS_STAT_H
+                 # include <sys/stat.h>
+                 #endif
+"
+if test "x$ac_cv_member_struct_stat_st_mtime_nsec" = xyes; then :
+  CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIME_NSEC"
+fi
+
+
+if test "x$ac_cv_member_struct_stat_st_mtim" = "xyes"; then
+    ac_fn_c_check_member "$LINENO" "struct stat" "st_mtim.tv_nsec" "ac_cv_member_struct_stat_st_mtim_tv_nsec" "#ifdef HAVE_SYS_STAT_H
+                     # include <sys/stat.h>
+                     #endif
+"
+if test "x$ac_cv_member_struct_stat_st_mtim_tv_nsec" = xyes; then :
+  CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"
+fi
+
+elif test "x$ac_cv_member_struct_stat_st_mtimespec" = "xyes"; then
+    ac_fn_c_check_member "$LINENO" "struct stat" "st_mtimespec.tv_nsec" "ac_cv_member_struct_stat_st_mtimespec_tv_nsec" "#ifdef HAVE_SYS_STAT_H
+                     # include <sys/stat.h>
+                     #endif
+"
+if test "x$ac_cv_member_struct_stat_st_mtimespec_tv_nsec" = xyes; then :
+  CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"
+fi
+
+else
+    CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"
+fi
 
 # Checks for library functions.
 for ac_func in futimens qsort_r qsort_s
@@ -5983,33 +6077,6 @@ fi
 if test $ac_cv_func_qsort_s = yes; then
     CPPFLAGS="${CPPFLAGS} -DHAVE_QSORT_S"
 fi
-
-# Check if compiler flag '-Wno-unused-function' is supported
-oCFLAGS="${CFLAGS}"
-CFLAGS="-Wno-unused-function"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if '${CFLAGS}' is supported" >&5
-$as_echo_n "checking if '${CFLAGS}' is supported... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		  PKG_CFLAGS="${PKG_CFLAGS} ${CFLAGS}"
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-CFLAGS="${oCFLAGS}"
 
 
 PKG_CFLAGS="${PKG_CFLAGS} ${LIBSSH2_CFLAGS}"

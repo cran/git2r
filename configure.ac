@@ -152,9 +152,8 @@ esac
 
 AC_SEARCH_LIBS([EVP_EncryptInit],
                [crypto],
-               [AC_SEARCH_LIBS([SSL_library_init],
-                               [ssl],
-                               [have_ssl=yes])])
+               [AC_SEARCH_LIBS([SSL_library_init], [ssl], [have_ssl=yes])
+                AC_SEARCH_LIBS([OPENSSL_init_ssl], [ssl], [have_ssl=yes])])
 
 if test "x${have_ssl}" = xno; then
     AC_MSG_FAILURE([
@@ -289,24 +288,59 @@ esac
 
 # Determine architecture of the machine
 AC_CHECK_SIZEOF([void*])
-if test "x$ac_cv_sizeof_voidp" == "x8"; then
+if test "x$ac_cv_sizeof_voidp" = "x8"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
-elif test "x$ac_cv_sizeof_voidp" == "x4"; then
+elif test "x$ac_cv_sizeof_voidp" = "x4"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
 else
     AC_MSG_FAILURE([Unsupported architecture])
 fi
 
 # Checks for structures
-AC_CHECK_MEMBERS([struct stat.st_atimespec],
-                 [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_ATIMESPEC"],
-                 [],
-                 [#ifdef HAVE_SYS_TYPES_H
-                  # include <sys/types.h>
-                  #endif
-                  #ifdef HAVE_SYS_STAT_H
-                  # include <sys/stat.h>
-                  #endif])
+AC_CHECK_MEMBER([struct stat.st_mtim],
+                [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIM"],
+                [],
+                [#ifdef HAVE_SYS_TYPES_H
+                 # include <sys/types.h>
+                 #endif
+                 #ifdef HAVE_SYS_STAT_H
+                 # include <sys/stat.h>
+                 #endif])
+
+AC_CHECK_MEMBER([struct stat.st_mtimespec],
+                [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIMESPEC"],
+                [],
+                [#ifdef HAVE_SYS_TYPES_H
+                 # include <sys/types.h>
+                 #endif
+                 #ifdef HAVE_SYS_STAT_H
+                 # include <sys/stat.h>
+                 #endif])
+
+AC_CHECK_MEMBER([struct stat.st_mtime_nsec],
+                [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIME_NSEC"],
+                [],
+                [#ifdef HAVE_SYS_STAT_H
+                 # include <sys/stat.h>
+                 #endif])
+
+if test "x$ac_cv_member_struct_stat_st_mtim" = "xyes"; then
+    AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
+                    [CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"],
+                    [],
+                    [#ifdef HAVE_SYS_STAT_H
+                     # include <sys/stat.h>
+                     #endif])
+elif test "x$ac_cv_member_struct_stat_st_mtimespec" = "xyes"; then
+    AC_CHECK_MEMBER([struct stat.st_mtimespec.tv_nsec],
+                    [CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"],
+                    [],
+                    [#ifdef HAVE_SYS_STAT_H
+                     # include <sys/stat.h>
+                     #endif])
+else
+    CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"
+fi
 
 # Checks for library functions.
 AC_CHECK_FUNCS([futimens qsort_r qsort_s])
@@ -322,16 +356,6 @@ fi
 if test $ac_cv_func_qsort_s = yes; then
     CPPFLAGS="${CPPFLAGS} -DHAVE_QSORT_S"
 fi
-
-# Check if compiler flag '-Wno-unused-function' is supported
-oCFLAGS="${CFLAGS}"
-CFLAGS="-Wno-unused-function"
-AC_MSG_CHECKING([if '${CFLAGS}' is supported])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM([],[])],
-	          [AC_MSG_RESULT([yes])]
-		  PKG_CFLAGS="${PKG_CFLAGS} ${CFLAGS}",
-		  [AC_MSG_RESULT([no])])
-CFLAGS="${oCFLAGS}"
 
 AC_SUBST(GIT2R_SRC_REGEX)
 AC_SUBST([PKG_CFLAGS], ["${PKG_CFLAGS} ${LIBSSH2_CFLAGS}"])

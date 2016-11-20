@@ -302,6 +302,11 @@ static int attr_cache__lookup_path(
 	return error;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 static void attr_cache__free(git_attr_cache *cache)
 {
 	bool unlock;
@@ -350,6 +355,10 @@ static void attr_cache__free(git_attr_cache *cache)
 
 	git__free(cache);
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
 
 int git_attr_cache__do_init(git_repository *repo)
 {
@@ -408,6 +417,11 @@ cancel:
 	return ret;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 void git_attr_cache_flush(git_repository *repo)
 {
 	git_attr_cache *cache;
@@ -418,6 +432,10 @@ void git_attr_cache_flush(git_repository *repo)
 	if (repo && (cache = git__swap(repo->attrcache, NULL)) != NULL)
 		attr_cache__free(cache);
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
 
 int git_attr_cache__insert_macro(git_repository *repo, git_attr_rule *macro)
 {
@@ -453,4 +471,3 @@ git_attr_rule *git_attr_cache__lookup_macro(
 
 	return (git_attr_rule *)git_strmap_value_at(macros, pos);
 }
-

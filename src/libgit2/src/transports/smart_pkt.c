@@ -433,6 +433,7 @@ int git_pkt_parse_line(
 	 * line?
 	 */
 	if (len == PKT_LEN_SIZE) {
+		*head = NULL;
 		*out = line;
 		return 0;
 	}
@@ -499,6 +500,11 @@ int git_pkt_buffer_flush(git_buf *buf)
 	return git_buf_put(buf, pkt_flush_str, strlen(pkt_flush_str));
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
+
 static int buffer_want_with_caps(const git_remote_head *head, transport_smart_caps *caps, git_buf *buf)
 {
 	git_buf str = GIT_BUF_INIT;
@@ -548,6 +554,10 @@ static int buffer_want_with_caps(const git_remote_head *head, transport_smart_ca
 
 	return 0;
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
 
 /*
  * All "want" packets have the same length and format, so what we do

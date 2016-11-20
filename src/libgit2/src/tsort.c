@@ -374,6 +374,11 @@ void git__tsort_r(
 	}
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 static int tsort_r_cmp(const void *a, const void *b, void *payload)
 {
 	return ((git__tsort_cmp)payload)(a, b);
@@ -383,3 +388,7 @@ void git__tsort(void **dst, size_t size, git__tsort_cmp cmp)
 {
 	git__tsort_r(dst, size, tsort_r_cmp, cmp);
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif

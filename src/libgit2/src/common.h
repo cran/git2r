@@ -52,7 +52,7 @@
 # include "win32/error.h"
 # include "win32/version.h"
 # ifdef GIT_THREADS
-#	include "win32/pthread.h"
+#	include "win32/thread.h"
 # endif
 # if defined(GIT_MSVC_CRTDBG)
 #   include "win32/w32_stack.h"
@@ -110,7 +110,8 @@
 /**
  * Set the error message for this thread, formatting as needed.
  */
-void giterr_set(int error_class, const char *string, ...);
+
+void giterr_set(int error_class, const char *string, ...) GIT_FORMAT_PRINTF(2, 3);
 
 /**
  * Set the error message for a regex failure, using the internal regex

@@ -134,6 +134,7 @@ static const R_CallMethodDef callMethods[] =
     {"git2r_repository_set_head_detached", (DL_FUNC)&git2r_repository_set_head_detached, 1},
     {"git2r_repository_workdir", (DL_FUNC)&git2r_repository_workdir, 1},
     {"git2r_reset", (DL_FUNC)&git2r_reset, 2},
+    {"git2r_reset_default", (DL_FUNC)&git2r_reset_default, 2},
     {"git2r_revparse_single", (DL_FUNC)&git2r_revparse_single, 2},
     {"git2r_revwalk_contributions", (DL_FUNC)&git2r_revwalk_contributions, 4},
     {"git2r_revwalk_list", (DL_FUNC)&git2r_revwalk_list, 5},
@@ -142,8 +143,9 @@ static const R_CallMethodDef callMethods[] =
     {"git2r_stash_drop", (DL_FUNC)&git2r_stash_drop, 2},
     {"git2r_stash_list", (DL_FUNC)&git2r_stash_list, 1},
     {"git2r_stash_save", (DL_FUNC)&git2r_stash_save, 6},
-    {"git2r_status_list", (DL_FUNC)&git2r_status_list, 5},
+    {"git2r_status_list", (DL_FUNC)&git2r_status_list, 6},
     {"git2r_tag_create", (DL_FUNC)&git2r_tag_create, 4},
+    {"git2r_tag_delete", (DL_FUNC)&git2r_tag_delete, 2},
     {"git2r_tag_list", (DL_FUNC)&git2r_tag_list, 1},
     {NULL, NULL, 0}
 };

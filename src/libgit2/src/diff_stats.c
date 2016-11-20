@@ -7,7 +7,7 @@
 #include "common.h"
 #include "vector.h"
 #include "diff.h"
-#include "diff_patch.h"
+#include "patch_generate.h"
 
 #define DIFF_RENAME_FILE_SEPARATOR " => "
 #define STATS_FULL_MIN_SCALE 7
@@ -43,6 +43,11 @@ static int digits_for_value(size_t val)
 
 	return count;
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
 
 int git_diff_file_stats__full_to_buf(
 	git_buf *out,
@@ -134,6 +139,10 @@ int git_diff_file_stats__number_to_buf(
 	return error;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
+
 int git_diff_file_stats__summary_to_buf(
 	git_buf *out,
 	const git_diff_delta *delta)
@@ -190,8 +199,9 @@ int git_diff_get_stats(
 			break;
 
 		/* keep a count of renames because it will affect formatting */
-		delta = git_patch_get_delta(patch);
+		delta = patch->delta;
 
+		/* TODO ugh */
 		namelen = strlen(delta->new_file.path);
 		if (strcmp(delta->old_file.path, delta->new_file.path) != 0) {
 			namelen += strlen(delta->old_file.path);
@@ -253,6 +263,11 @@ size_t git_diff_stats_deletions(
 	return stats->deletions;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
+
 int git_diff_stats_to_buf(
 	git_buf *out,
 	const git_diff_stats *stats,
@@ -299,15 +314,24 @@ int git_diff_stats_to_buf(
 	}
 
 	if (format & GIT_DIFF_STATS_FULL || format & GIT_DIFF_STATS_SHORT) {
-		error = git_buf_printf(
-			out, " %" PRIuZ " file%s changed, %" PRIuZ
-			" insertion%s(+), %" PRIuZ " deletion%s(-)\n",
-			stats->files_changed, stats->files_changed != 1 ? "s" : "",
-			stats->insertions, stats->insertions != 1 ? "s" : "",
-			stats->deletions, stats->deletions != 1 ? "s" : "");
+		git_buf_printf(
+			out, " %" PRIuZ " file%s changed",
+			stats->files_changed, stats->files_changed != 1 ? "s" : "");
 
-		if (error < 0)
-			return error;
+		if (stats->insertions || stats->deletions == 0)
+			git_buf_printf(
+				out, ", %" PRIuZ " insertion%s(+)",
+				stats->insertions, stats->insertions != 1 ? "s" : "");
+
+		if (stats->deletions || stats->insertions == 0)
+			git_buf_printf(
+				out, ", %" PRIuZ " deletion%s(-)",
+				stats->deletions, stats->deletions != 1 ? "s" : "");
+
+		git_buf_putc(out, '\n');
+
+		if (git_buf_oom(out))
+			return -1;
 	}
 
 	if (format & GIT_DIFF_STATS_INCLUDE_SUMMARY) {
@@ -324,6 +348,10 @@ int git_diff_stats_to_buf(
 	return error;
 }
 
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
+
 void git_diff_stats_free(git_diff_stats *stats)
 {
 	if (stats == NULL)
@@ -333,4 +361,3 @@ void git_diff_stats_free(git_diff_stats *stats)
 	git__free(stats->filestats);
 	git__free(stats);
 }
-
