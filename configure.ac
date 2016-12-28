@@ -80,6 +80,7 @@ RBIN="${R_HOME}/bin/R"
 CC=`"${RBIN}" CMD config CC`
 CFLAGS=`"${RBIN}" CMD config CFLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
+CPICFLAGS=`"${RBIN}" CMD config CPICFLAGS`
 
 # Check for zlib
 have_zlib=no
@@ -188,17 +189,49 @@ if test [ -n "$libssh2_lib_path" ] ; then
     LIBS="-L${libssh2_lib_path} ${LIBS}"
 fi
 
-# On OS X, add path to libssh2 in brew
 case "${host_os}" in
     darwin*)
+        # On OS X, try to find libssh2 in brew
         if test "x${BREW}" = xyes; then
+            oCPPFLAGS="${CPPFLAGS}"
             CPPFLAGS="${CPPFLAGS} -I${BREW_DIR}/opt/libssh2/include"
+            oLIBS="${LIBS}"
             LIBS="${LIBS} -L${BREW_DIR}/opt/libssh2/lib"
+            AC_SEARCH_LIBS([libssh2_version], [ssh2], [have_ssh2=yes])
+        fi
+
+        if test "x${have_ssh2}" = xno; then
+            CPPFLAGS="${oCPPFLAGS}"
+            LIBS="${oLIBS}"
+
+            AC_MSG_NOTICE([Download and build libssh2])
+
+            mkdir -p libssh2 && \
+            curl -fsSL https://www.libssh2.org/download/libssh2-1.8.0.tar.gz | \
+            tar xz --strip 1 -C libssh2
+
+            mkdir -p src/libgit2/deps/libssh2
+            LIBSSH2_INST_DIR="${PWD}/src/libgit2/deps/libssh2"
+            cp -f tools/missing libssh2
+            cd libssh2
+            ./configure --with-pic --with-openssl --disable-examples-build \
+              --disable-shared --enable-static --prefix=$LIBSSH2_INST_DIR \
+              CC="${CC}" CFLAGS="${CFLAGS} ${CPICFLAGS} -Wno-deprecated-declarations" \
+              CPPFLAGS="${CPPFLAGS}" && make && make install && have_ssh2=yes
+            cd ..
+            rm -rf libssh2
+
+            if test "x${have_ssh2}" = xyes; then
+                LIBSSH2_CFLAGS="-Ilibgit2/deps/libssh2/include"
+                LIBSSH2_LIBS="-Llibgit2/deps/libssh2/lib -lssh2"
+            fi
+
         fi
     ;;
+    *)
+        AC_SEARCH_LIBS([libssh2_version], [ssh2], [have_ssh2=yes])
+    ;;
 esac
-
-AC_SEARCH_LIBS([libssh2_version], [ssh2], [have_ssh2=yes])
 
 if test "x${have_ssh2}" = xno; then
     AC_MSG_WARN([

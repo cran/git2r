@@ -677,6 +677,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -762,6 +763,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1014,6 +1016,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1151,7 +1162,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1304,6 +1315,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -3366,6 +3378,7 @@ RBIN="${R_HOME}/bin/R"
 CC=`"${RBIN}" CMD config CC`
 CFLAGS=`"${RBIN}" CMD config CFLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
+CPICFLAGS=`"${RBIN}" CMD config CPICFLAGS`
 
 # Check for zlib
 have_zlib=no
@@ -3891,17 +3904,15 @@ if test  -n "$libssh2_lib_path"  ; then
     LIBS="-L${libssh2_lib_path} ${LIBS}"
 fi
 
-# On OS X, add path to libssh2 in brew
 case "${host_os}" in
     darwin*)
+        # On OS X, try to find libssh2 in brew
         if test "x${BREW}" = xyes; then
+            oCPPFLAGS="${CPPFLAGS}"
             CPPFLAGS="${CPPFLAGS} -I${BREW_DIR}/opt/libssh2/include"
+            oLIBS="${LIBS}"
             LIBS="${LIBS} -L${BREW_DIR}/opt/libssh2/lib"
-        fi
-    ;;
-esac
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing libssh2_version" >&5
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing libssh2_version" >&5
 $as_echo_n "checking for library containing libssh2_version... " >&6; }
 if ${ac_cv_search_libssh2_version+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -3957,6 +3968,96 @@ if test "$ac_res" != no; then :
   have_ssh2=yes
 fi
 
+        fi
+
+        if test "x${have_ssh2}" = xno; then
+            CPPFLAGS="${oCPPFLAGS}"
+            LIBS="${oLIBS}"
+
+            { $as_echo "$as_me:${as_lineno-$LINENO}: Download and build libssh2" >&5
+$as_echo "$as_me: Download and build libssh2" >&6;}
+
+            mkdir -p libssh2 && \
+            curl -fsSL https://www.libssh2.org/download/libssh2-1.8.0.tar.gz | \
+            tar xz --strip 1 -C libssh2
+
+            mkdir -p src/libgit2/deps/libssh2
+            LIBSSH2_INST_DIR="${PWD}/src/libgit2/deps/libssh2"
+            cp -f tools/missing libssh2
+            cd libssh2
+            ./configure --with-pic --with-openssl --disable-examples-build \
+              --disable-shared --enable-static --prefix=$LIBSSH2_INST_DIR \
+              CC="${CC}" CFLAGS="${CFLAGS} ${CPICFLAGS} -Wno-deprecated-declarations" \
+              CPPFLAGS="${CPPFLAGS}" && make && make install && have_ssh2=yes
+            cd ..
+            rm -rf libssh2
+
+            if test "x${have_ssh2}" = xyes; then
+                LIBSSH2_CFLAGS="-Ilibgit2/deps/libssh2/include"
+                LIBSSH2_LIBS="-Llibgit2/deps/libssh2/lib -lssh2"
+            fi
+
+        fi
+    ;;
+    *)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing libssh2_version" >&5
+$as_echo_n "checking for library containing libssh2_version... " >&6; }
+if ${ac_cv_search_libssh2_version+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libssh2_version ();
+int
+main ()
+{
+return libssh2_version ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ssh2; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_libssh2_version=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_libssh2_version+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_libssh2_version+:} false; then :
+
+else
+  ac_cv_search_libssh2_version=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_libssh2_version" >&5
+$as_echo "$ac_cv_search_libssh2_version" >&6; }
+ac_res=$ac_cv_search_libssh2_version
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  have_ssh2=yes
+fi
+
+    ;;
+esac
 
 if test "x${have_ssh2}" = xno; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:
@@ -5068,36 +5169,42 @@ else
       if test $am_cv_lib_iconv = yes; then
         LIBS="$LIBS $LIBICONV"
       fi
-      if test "$cross_compiling" = yes; then :
-
-         case "$host_os" in
-           aix* | hpux*) am_cv_func_iconv_works="guessing no" ;;
-           *)            am_cv_func_iconv_works="guessing yes" ;;
-         esac
-
+      am_cv_func_iconv_works=no
+      for ac_iconv_const in '' 'const'; do
+        if test "$cross_compiling" = yes; then :
+  case "$host_os" in
+             aix* | hpux*) am_cv_func_iconv_works="guessing no" ;;
+             *)            am_cv_func_iconv_works="guessing yes" ;;
+           esac
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <iconv.h>
 #include <string.h>
-int main ()
+
+#ifndef ICONV_CONST
+# define ICONV_CONST $ac_iconv_const
+#endif
+
+int
+main ()
 {
-  int result = 0;
+int result = 0;
   /* Test against AIX 5.1 bug: Failures are not distinguishable from successful
      returns.  */
   {
     iconv_t cd_utf8_to_88591 = iconv_open ("ISO8859-1", "UTF-8");
     if (cd_utf8_to_88591 != (iconv_t)(-1))
       {
-        static const char input[] = "\342\202\254"; /* EURO SIGN */
+        static ICONV_CONST char input[] = "\342\202\254"; /* EURO SIGN */
         char buf[10];
-        const char *inptr = input;
+        ICONV_CONST char *inptr = input;
         size_t inbytesleft = strlen (input);
         char *outptr = buf;
         size_t outbytesleft = sizeof (buf);
         size_t res = iconv (cd_utf8_to_88591,
-                            (char **) &inptr, &inbytesleft,
+                            &inptr, &inbytesleft,
                             &outptr, &outbytesleft);
         if (res == 0)
           result |= 1;
@@ -5110,14 +5217,14 @@ int main ()
     iconv_t cd_ascii_to_88591 = iconv_open ("ISO8859-1", "646");
     if (cd_ascii_to_88591 != (iconv_t)(-1))
       {
-        static const char input[] = "\263";
+        static ICONV_CONST char input[] = "\263";
         char buf[10];
-        const char *inptr = input;
+        ICONV_CONST char *inptr = input;
         size_t inbytesleft = strlen (input);
         char *outptr = buf;
         size_t outbytesleft = sizeof (buf);
         size_t res = iconv (cd_ascii_to_88591,
-                            (char **) &inptr, &inbytesleft,
+                            &inptr, &inbytesleft,
                             &outptr, &outbytesleft);
         if (res == 0)
           result |= 2;
@@ -5129,14 +5236,14 @@ int main ()
     iconv_t cd_88591_to_utf8 = iconv_open ("UTF-8", "ISO-8859-1");
     if (cd_88591_to_utf8 != (iconv_t)(-1))
       {
-        static const char input[] = "\304";
+        static ICONV_CONST char input[] = "\304";
         static char buf[2] = { (char)0xDE, (char)0xAD };
-        const char *inptr = input;
+        ICONV_CONST char *inptr = input;
         size_t inbytesleft = 1;
         char *outptr = buf;
         size_t outbytesleft = 1;
         size_t res = iconv (cd_88591_to_utf8,
-                            (char **) &inptr, &inbytesleft,
+                            &inptr, &inbytesleft,
                             &outptr, &outbytesleft);
         if (res != (size_t)(-1) || outptr - buf > 1 || buf[1] != (char)0xAD)
           result |= 4;
@@ -5149,14 +5256,14 @@ int main ()
     iconv_t cd_88591_to_utf8 = iconv_open ("utf8", "iso88591");
     if (cd_88591_to_utf8 != (iconv_t)(-1))
       {
-        static const char input[] = "\304rger mit b\366sen B\374bchen ohne Augenma\337";
+        static ICONV_CONST char input[] = "\304rger mit b\366sen B\374bchen ohne Augenma\337";
         char buf[50];
-        const char *inptr = input;
+        ICONV_CONST char *inptr = input;
         size_t inbytesleft = strlen (input);
         char *outptr = buf;
         size_t outbytesleft = sizeof (buf);
         size_t res = iconv (cd_88591_to_utf8,
-                            (char **) &inptr, &inbytesleft,
+                            &inptr, &inbytesleft,
                             &outptr, &outbytesleft);
         if ((int)res > 0)
           result |= 8;
@@ -5176,17 +5283,20 @@ int main ()
       && iconv_open ("utf8", "eucJP") == (iconv_t)(-1))
     result |= 16;
   return result;
+
+  ;
+  return 0;
 }
 _ACEOF
 if ac_fn_c_try_run "$LINENO"; then :
   am_cv_func_iconv_works=yes
-else
-  am_cv_func_iconv_works=no
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
 fi
 
+        test "$am_cv_func_iconv_works" = no || break
+      done
       LIBS="$am_save_LIBS"
 
 fi
