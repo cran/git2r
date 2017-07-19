@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2015 The git2r contributors
+ *  Copyright (C) 2013-2017 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -91,18 +91,21 @@ static int git2r_repository_fetchhead_foreach_cb(
     if (R_NilValue != cb_data->list) {
         char sha[GIT_OID_HEXSZ + 1];
         SEXP fetch_head;
+        SEXP s_ref_name = Rf_install("ref_name");
+        SEXP s_remote_url = Rf_install("remote_url");
+        SEXP s_sha = Rf_install("sha");
+        SEXP s_is_merge = Rf_install("is_merge");
+        SEXP s_repo = Rf_install("repo");
 
-        SET_VECTOR_ELT(
-            cb_data->list,
-            cb_data->n,
-            fetch_head = NEW_OBJECT(MAKE_CLASS("git_fetch_head")));
-
-        SET_SLOT(fetch_head, Rf_install("ref_name"), mkString(ref_name));
-        SET_SLOT(fetch_head, Rf_install("remote_url"), mkString(remote_url));
+        PROTECT(fetch_head = NEW_OBJECT(MAKE_CLASS("git_fetch_head")));
+        SET_VECTOR_ELT(cb_data->list, cb_data->n, fetch_head);
+        SET_SLOT(fetch_head, s_ref_name, mkString(ref_name));
+        SET_SLOT(fetch_head, s_remote_url, mkString(remote_url));
         git_oid_tostr(sha, sizeof(sha), oid);
-        SET_SLOT(fetch_head, Rf_install("sha"), mkString(sha));
-        SET_SLOT(fetch_head, Rf_install("is_merge"), ScalarLogical(is_merge));
-        SET_SLOT(fetch_head, Rf_install("repo"), cb_data->repo);
+        SET_SLOT(fetch_head, s_sha, mkString(sha));
+        SET_SLOT(fetch_head, s_is_merge, ScalarLogical(is_merge));
+        SET_SLOT(fetch_head, s_repo, cb_data->repo);
+        UNPROTECT(1);
     }
 
     cb_data->n += 1;
@@ -496,6 +499,7 @@ cleanup:
  */
 SEXP git2r_repository_workdir(SEXP repo)
 {
+    int nprotect = 0;
     SEXP result = R_NilValue;
     git_repository *repository;
 
@@ -506,11 +510,14 @@ SEXP git2r_repository_workdir(SEXP repo)
     if (!git_repository_is_bare(repository)) {
         const char *wd = git_repository_workdir(repository);
         PROTECT(result = allocVector(STRSXP, 1));
+        nprotect++;
         SET_STRING_ELT(result, 0, mkChar(wd));
-        UNPROTECT(1);
     }
 
     git_repository_free(repository);
+
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     return result;
 }

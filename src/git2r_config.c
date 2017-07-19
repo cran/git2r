@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2015 The git2r contributors
+ *  Copyright (C) 2013-2017 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -108,6 +108,7 @@ static size_t git2r_config_list_init(
 {
     if (n_level[level]) {
         SEXP item;
+        SEXP names;
 
         i_list[level] = i++;
         SET_VECTOR_ELT(
@@ -115,9 +116,8 @@ static size_t git2r_config_list_init(
             i_list[level],
             item = allocVector(VECSXP, n_level[level]));
         setAttrib(item, R_NamesSymbol, allocVector(STRSXP, n_level[level]));
-        SET_STRING_ELT(getAttrib(list, R_NamesSymbol),
-                       i_list[level] ,
-                       mkChar(name));
+        names = getAttrib(list, R_NamesSymbol);
+        SET_STRING_ELT(names, i_list[level] , mkChar(name));
     }
 
     return i;
@@ -332,7 +332,7 @@ cleanup:
  */
 SEXP git2r_config_set(SEXP repo, SEXP variables)
 {
-    int err = 0;
+    int err = 0, nprotect = 0;
     SEXP names;
     size_t i, n;
     git_config *cfg = NULL;
@@ -346,7 +346,8 @@ SEXP git2r_config_set(SEXP repo, SEXP variables)
         if (err)
             goto cleanup;
 
-        names = getAttrib(variables, R_NamesSymbol);
+        PROTECT(names = getAttrib(variables, R_NamesSymbol));
+        nprotect++;
         for (i = 0; i < n; i++) {
             const char *key = CHAR(STRING_ELT(names, i));
             const char *value = NULL;
@@ -374,6 +375,9 @@ SEXP git2r_config_set(SEXP repo, SEXP variables)
 cleanup:
     if (cfg)
         git_config_free(cfg);
+
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     if (err)
         git2r_error(__func__, giterr_last(), NULL, NULL);

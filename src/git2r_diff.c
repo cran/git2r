@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2015 The git2r contributors
+ *  Copyright (C) 2013-2017 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -118,7 +118,7 @@ SEXP git2r_diff(SEXP repo, SEXP tree1, SEXP tree2, SEXP index, SEXP filename)
  */
 SEXP git2r_diff_index_to_wd(SEXP repo, SEXP filename)
 {
-    int err;
+    int err, nprotect = 0;
     git_repository *repository = NULL;
     git_diff *diff = NULL;
     SEXP result = R_NilValue;
@@ -139,12 +139,39 @@ SEXP git2r_diff_index_to_wd(SEXP repo, SEXP filename)
 	goto cleanup;
 
     if (R_NilValue == filename) {
+        SEXP s_new = Rf_install("new");
+        SEXP s_old = Rf_install("old");
+
         PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_diff")));
-        SET_SLOT(result, Rf_install("old"), mkString("index"));
-        SET_SLOT(result, Rf_install("new"), mkString("workdir"));
+        nprotect++;
+        SET_SLOT(result, s_old, mkString("index"));
+        SET_SLOT(result, s_new, mkString("workdir"));
         err = git2r_diff_format_to_r(diff, result);
+    } else if (0 == length(filename)) {
+        git_buf buf = GIT_BUF_INIT;
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_buf,
+            &buf);
+        if (0 == err) {
+            PROTECT(result = mkString(buf.ptr));
+            nprotect++;
+        }
+
+        git_buf_free(&buf);
     } else {
-        err = git2r_diff_print(diff, filename, &result);
+        FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_file_handle,
+            fp);
+
+        if (fp)
+            fclose(fp);
     }
 
 cleanup:
@@ -154,8 +181,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (R_NilValue != result)
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     if (err)
         git2r_error(__func__, giterr_last(), NULL, NULL);
@@ -178,7 +205,7 @@ cleanup:
  */
 SEXP git2r_diff_head_to_index(SEXP repo, SEXP filename)
 {
-    int err;
+    int err, nprotect = 0;
     git_repository *repository = NULL;
     git_diff *diff = NULL;
     git_object *obj = NULL;
@@ -210,13 +237,40 @@ SEXP git2r_diff_head_to_index(SEXP repo, SEXP filename)
 	goto cleanup;
 
     if (R_NilValue == filename) {
+        SEXP s_new = Rf_install("new");
+        SEXP s_old = Rf_install("old");
+
         /* TODO: object instead of HEAD string */
         PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_diff")));
-        SET_SLOT(result, Rf_install("old"), mkString("HEAD"));
-        SET_SLOT(result, Rf_install("new"), mkString("index"));
+        nprotect++;
+        SET_SLOT(result, s_old, mkString("HEAD"));
+        SET_SLOT(result, s_new, mkString("index"));
         err = git2r_diff_format_to_r(diff, result);
+    } else if (0 == length(filename)) {
+        git_buf buf = GIT_BUF_INIT;
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_buf,
+            &buf);
+        if (0 == err) {
+            PROTECT(result = mkString(buf.ptr));
+            nprotect++;
+        }
+
+        git_buf_free(&buf);
     } else {
-        err = git2r_diff_print(diff, filename, &result);
+        FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_file_handle,
+            fp);
+
+        if (fp)
+            fclose(fp);
     }
 
 cleanup:
@@ -232,8 +286,8 @@ cleanup:
     if (repository)
         git_repository_free(repository);
 
-    if (R_NilValue != result)
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     if (err)
         git2r_error(__func__, giterr_last(), NULL, NULL);
@@ -256,7 +310,7 @@ cleanup:
  */
 SEXP git2r_diff_tree_to_wd(SEXP tree, SEXP filename)
 {
-    int err;
+    int err, nprotect = 0;
     git_repository *repository = NULL;
     git_diff *diff = NULL;
     git_object *obj = NULL;
@@ -289,12 +343,38 @@ SEXP git2r_diff_tree_to_wd(SEXP tree, SEXP filename)
 	goto cleanup;
 
     if (R_NilValue == filename) {
+        SEXP s_new = Rf_install("new");
+
         PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_diff")));
+        nprotect++;
         SET_SLOT(result, Rf_install("old"), tree);
-        SET_SLOT(result, Rf_install("new"), mkString("workdir"));
+        SET_SLOT(result, s_new, mkString("workdir"));
         err = git2r_diff_format_to_r(diff, result);
+    } else if (0 == length(filename)) {
+        git_buf buf = GIT_BUF_INIT;
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_buf,
+            &buf);
+        if (0 == err) {
+            PROTECT(result = mkString(buf.ptr));
+            nprotect++;
+        }
+
+        git_buf_free(&buf);
     } else {
-        err = git2r_diff_print(diff, filename, &result);
+        FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_file_handle,
+            fp);
+
+        if (fp)
+            fclose(fp);
     }
 
 cleanup:
@@ -310,8 +390,8 @@ cleanup:
     if (repository)
 	git_repository_free(repository);
 
-    if (R_NilValue != result)
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     if (err)
         git2r_error(__func__, giterr_last(), NULL, NULL);
@@ -334,7 +414,7 @@ cleanup:
  */
 SEXP git2r_diff_tree_to_index(SEXP tree, SEXP filename)
 {
-    int err;
+    int err, nprotect = 0;
     git_repository *repository = NULL;
     git_diff *diff = NULL;
     git_object *obj = NULL;
@@ -372,12 +452,38 @@ SEXP git2r_diff_tree_to_index(SEXP tree, SEXP filename)
 	goto cleanup;
 
     if (R_NilValue == filename) {
+        SEXP s_new = Rf_install("new");
+
         PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_diff")));
+        nprotect++;
         SET_SLOT(result, Rf_install("old"), tree);
-        SET_SLOT(result, Rf_install("new"), mkString("index"));
+        SET_SLOT(result, s_new, mkString("index"));
         err = git2r_diff_format_to_r(diff, result);
+    } else if (0 == length(filename)) {
+        git_buf buf = GIT_BUF_INIT;
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_buf,
+            &buf);
+        if (0 == err) {
+            PROTECT(result = mkString(buf.ptr));
+            nprotect++;
+        }
+
+        git_buf_free(&buf);
     } else {
-        err = git2r_diff_print(diff, filename, &result);
+        FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_file_handle,
+            fp);
+
+        if (fp)
+            fclose(fp);
     }
 
 cleanup:
@@ -393,8 +499,8 @@ cleanup:
     if (repository)
 	git_repository_free(repository);
 
-    if (R_NilValue != result)
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     if (err)
 	git2r_error(__func__, giterr_last(), NULL, NULL);
@@ -418,7 +524,7 @@ cleanup:
  */
 SEXP git2r_diff_tree_to_tree(SEXP tree1, SEXP tree2, SEXP filename)
 {
-    int err;
+    int err, nprotect = 0;
     git_repository *repository = NULL;
     git_diff *diff = NULL;
     git_object *obj1 = NULL, *obj2 = NULL;
@@ -469,11 +575,35 @@ SEXP git2r_diff_tree_to_tree(SEXP tree1, SEXP tree2, SEXP filename)
 
     if (R_NilValue == filename) {
         PROTECT(result = NEW_OBJECT(MAKE_CLASS("git_diff")));
+        nprotect++;
         SET_SLOT(result, Rf_install("old"), tree1);
         SET_SLOT(result, Rf_install("new"), tree2);
         err = git2r_diff_format_to_r(diff, result);
+    } else if (0 == length(filename)) {
+        git_buf buf = GIT_BUF_INIT;
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_buf,
+            &buf);
+        if (0 == err) {
+            PROTECT(result = mkString(buf.ptr));
+            nprotect++;
+        }
+
+        git_buf_free(&buf);
     } else {
-        err = git2r_diff_print(diff, filename, &result);
+        FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
+
+        err = git_diff_print(
+            diff,
+            GIT_DIFF_FORMAT_PATCH,
+            git_diff_print_callback__to_file_handle,
+            fp);
+
+        if (fp)
+            fclose(fp);
     }
 
 cleanup:
@@ -495,8 +625,8 @@ cleanup:
     if (repository)
 	git_repository_free(repository);
 
-    if (R_NilValue != result)
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
     if (err)
 	git2r_error(__func__, giterr_last(), NULL, NULL);
@@ -665,11 +795,12 @@ int git2r_diff_get_file_cb(const git_diff_delta *delta,
        temporary storage. */
     if (p->file_ptr != 0) {
         SEXP hunks;
+        SEXP s_hunks = Rf_install("hunks");
 	size_t len=p->hunk_ptr, i;
 
 	SET_SLOT(
             VECTOR_ELT(p->result, p->file_ptr-1),
-            Rf_install("hunks"),
+            s_hunks,
             hunks = allocVector(VECSXP, p->hunk_ptr));
 	for (i = 0; i < len ; i++)
 	    SET_VECTOR_ELT(hunks, i, VECTOR_ELT(p->hunk_tmp, i));
@@ -678,15 +809,14 @@ int git2r_diff_get_file_cb(const git_diff_delta *delta,
     /* OK, ready for next file, if any */
     if (delta) {
 	SEXP file_obj;
+        SEXP s_new_file = Rf_install("new_file");
+        SEXP s_old_file = Rf_install("old_file");
 
-	SET_VECTOR_ELT(
-            p->result,
-            p->file_ptr,
-            file_obj = NEW_OBJECT(MAKE_CLASS("git_diff_file")));
-	SET_SLOT(file_obj, Rf_install("old_file"),
-		 mkString(delta->old_file.path));
-	SET_SLOT(file_obj, Rf_install("new_file"),
-		 mkString(delta->new_file.path));
+        PROTECT(file_obj = NEW_OBJECT(MAKE_CLASS("git_diff_file")));
+	SET_VECTOR_ELT(p->result, p->file_ptr, file_obj);
+	SET_SLOT(file_obj, s_old_file, mkString(delta->old_file.path));
+	SET_SLOT(file_obj, s_new_file, mkString(delta->new_file.path));
+        UNPROTECT(1);
 
 	p->file_ptr++;
 	p->hunk_ptr = 0;
@@ -720,32 +850,32 @@ int git2r_diff_get_hunk_cb(const git_diff_delta *delta,
     if (p->hunk_ptr != 0) {
 	SEXP lines;
 	size_t len=p->line_ptr, i;
+        SEXP s_lines = Rf_install("lines");
 
-	SET_SLOT(
-            VECTOR_ELT(p->hunk_tmp, p->hunk_ptr-1),
-            Rf_install("lines"),
-            lines = allocVector(VECSXP, p->line_ptr));
+        PROTECT(lines = allocVector(VECSXP, p->line_ptr));
+	SET_SLOT(VECTOR_ELT(p->hunk_tmp, p->hunk_ptr-1), s_lines, lines);
 	for (i = 0; i < len; i++)
 	    SET_VECTOR_ELT(lines, i, VECTOR_ELT(p->line_tmp, i));
+        UNPROTECT(1);
     }
 
     /* OK, ready for the next hunk, if any */
     if (hunk) {
 	SEXP hunk_obj;
+        SEXP s_old_start = Rf_install("old_start");
+        SEXP s_old_lines = Rf_install("old_lines");
+        SEXP s_new_start = Rf_install("new_start");
+        SEXP s_new_lines = Rf_install("new_lines");
+        SEXP s_header = Rf_install("header");
 
-	SET_VECTOR_ELT(
-            p->hunk_tmp,
-            p->hunk_ptr,
-            hunk_obj = NEW_OBJECT(MAKE_CLASS("git_diff_hunk")));
-	SET_SLOT(hunk_obj, Rf_install("old_start"),
-		 ScalarInteger(hunk->old_start));
-	SET_SLOT(hunk_obj, Rf_install("old_lines"),
-		 ScalarInteger(hunk->old_lines));
-	SET_SLOT(hunk_obj, Rf_install("new_start"),
-		 ScalarInteger(hunk->new_start));
-	SET_SLOT(hunk_obj, Rf_install("new_lines"),
-		 ScalarInteger(hunk->new_lines));
-	SET_SLOT(hunk_obj, Rf_install("header"), mkString(hunk->header));
+        PROTECT(hunk_obj = NEW_OBJECT(MAKE_CLASS("git_diff_hunk")));
+	SET_VECTOR_ELT(p->hunk_tmp, p->hunk_ptr, hunk_obj);
+	SET_SLOT(hunk_obj, s_old_start, ScalarInteger(hunk->old_start));
+	SET_SLOT(hunk_obj, s_old_lines, ScalarInteger(hunk->old_lines));
+	SET_SLOT(hunk_obj, s_new_start, ScalarInteger(hunk->new_start));
+	SET_SLOT(hunk_obj, s_new_lines, ScalarInteger(hunk->new_lines));
+	SET_SLOT(hunk_obj, s_header, mkString(hunk->header));
+        UNPROTECT(1);
 
 	p->hunk_ptr += 1;
 	p->line_ptr = 0;
@@ -776,32 +906,34 @@ int git2r_diff_get_line_cb(const git_diff_delta *delta,
     static char short_buffer[200];
     char *buffer = short_buffer;
     SEXP line_obj;
+    SEXP s_origin = Rf_install("origin");
+    SEXP s_old_lineno = Rf_install("old_lineno");
+    SEXP s_new_lineno = Rf_install("new_lineno");
+    SEXP s_num_lines = Rf_install("num_lines");
+    SEXP s_content = Rf_install("content");
 
     GIT_UNUSED(delta);
     GIT_UNUSED(hunk);
 
-    SET_VECTOR_ELT(
-        p->line_tmp,
-        p->line_ptr++,
-        line_obj = NEW_OBJECT(MAKE_CLASS("git_diff_line")));
+    PROTECT(line_obj = NEW_OBJECT(MAKE_CLASS("git_diff_line")));
+    SET_VECTOR_ELT(p->line_tmp, p->line_ptr++, line_obj);
 
-    SET_SLOT(line_obj, Rf_install("origin"), ScalarInteger(line->origin));
-    SET_SLOT(line_obj, Rf_install("old_lineno"),
-	     ScalarInteger(line->old_lineno));
-    SET_SLOT(line_obj, Rf_install("new_lineno"),
-	     ScalarInteger(line->new_lineno));
-    SET_SLOT(line_obj, Rf_install("num_lines"),
-	     ScalarInteger(line->num_lines));
+    SET_SLOT(line_obj, s_origin, ScalarInteger(line->origin));
+    SET_SLOT(line_obj, s_old_lineno, ScalarInteger(line->old_lineno));
+    SET_SLOT(line_obj, s_new_lineno, ScalarInteger(line->new_lineno));
+    SET_SLOT(line_obj, s_num_lines, ScalarInteger(line->num_lines));
 
     if (line->content_len > sizeof(buffer))
 	buffer = malloc(line->content_len+1);
     memcpy(buffer, line->content, line->content_len);
     buffer[line->content_len] = 0;
 
-    SET_SLOT(line_obj, Rf_install("content"), mkString(buffer));
+    SET_SLOT(line_obj, s_content, mkString(buffer));
 
     if (buffer != short_buffer)
 	free(buffer);
+
+    UNPROTECT(1);
 
     return 0;
 }
@@ -841,10 +973,8 @@ int git2r_diff_format_to_r(git_diff *diff, SEXP dest)
     if (err)
         return err;
 
-    SET_SLOT(
-        dest,
-        Rf_install("files"),
-        payload.result = allocVector(VECSXP, num_files));
+    PROTECT(payload.result = allocVector(VECSXP, num_files));
+    SET_SLOT(dest, Rf_install("files"), payload.result);
     PROTECT(payload.hunk_tmp = allocVector(VECSXP, max_hunks));
     PROTECT(payload.line_tmp = allocVector(VECSXP, max_lines));
 
@@ -863,52 +993,7 @@ int git2r_diff_format_to_r(git_diff *diff, SEXP dest)
             &payload);
     }
 
-    UNPROTECT(2);
-
-    return err;
-}
-
-/**
- * Print a diff
- *
- * @param diff Pointer to the diff
- * @param filename Determines where to write the diff. If filename is
- * a character vector of length 0, then the diff is written to a
- * character vector. If filename is a character vector of length one
- * with non-NA value, the diff is written to a file with name filename
- * (the file is overwritten if it exists).
- * @param r_buf If filename is a character vector of length 0, then
- * the diff is written to r_buf.
- * @return 0 if OK, else error code
- */
-int git2r_diff_print(git_diff *diff, SEXP filename, SEXP* r_buf)
-{
-    int err;
-
-    if (0 == length(filename)) {
-        git_buf buf = GIT_BUF_INIT;
-
-        err = git_diff_print(
-            diff,
-            GIT_DIFF_FORMAT_PATCH,
-            git_diff_print_callback__to_buf,
-            &buf);
-        if (0 == err)
-            PROTECT(*r_buf = mkString(buf.ptr));
-
-        git_buf_free(&buf);
-    } else {
-        FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
-
-        err = git_diff_print(
-            diff,
-            GIT_DIFF_FORMAT_PATCH,
-            git_diff_print_callback__to_file_handle,
-            fp);
-
-        if (fp)
-            fclose(fp);
-    }
+    UNPROTECT(3);
 
     return err;
 }

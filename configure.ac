@@ -1,5 +1,5 @@
 # git2r, R bindings to the libgit2 library.
-# Copyright (C) 2013-2016 The git2r contributors
+# Copyright (C) 2013-2017 The git2r contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2,
@@ -81,6 +81,16 @@ CC=`"${RBIN}" CMD config CC`
 CFLAGS=`"${RBIN}" CMD config CFLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 CPICFLAGS=`"${RBIN}" CMD config CPICFLAGS`
+
+# Determine architecture of the machine
+AC_CHECK_SIZEOF([void*])
+if test "x$ac_cv_sizeof_voidp" = "x8"; then
+    CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
+elif test "x$ac_cv_sizeof_voidp" = "x4"; then
+    CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
+else
+    AC_MSG_FAILURE([Unsupported architecture])
+fi
 
 # Check for zlib
 have_zlib=no
@@ -291,10 +301,10 @@ CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DGIT_OPENSSL"
 case "${host_os}" in
     darwin*)
         PKG_CFLAGS="-Wno-deprecated-declarations"
-        CPPFLAGS="${CPPFLAGS} -DGIT_COMMON_CRYPTO"
+        CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_COMMON_CRYPTO"
     ;;
     *)
-        CPPFLAGS="${CPPFLAGS} -DOPENSSL_SHA1"
+        CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_OPENSSL"
     ;;
 esac
 
@@ -319,16 +329,6 @@ case "${host_os}" in
         CPPFLAGS="${CPPFLAGS} -D_POSIX_C_SOURCE=200112L -D__EXTENSIONS__ -D_POSIX_PTHREAD_SEMANTICS"
     ;;
 esac
-
-# Determine architecture of the machine
-AC_CHECK_SIZEOF([void*])
-if test "x$ac_cv_sizeof_voidp" = "x8"; then
-    CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
-elif test "x$ac_cv_sizeof_voidp" = "x4"; then
-    CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
-else
-    AC_MSG_FAILURE([Unsupported architecture])
-fi
 
 # Checks for structures
 AC_CHECK_MEMBER([struct stat.st_mtim],
