@@ -4,6 +4,9 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
+
+#include "common.h"
+
 #include "git2.h"
 #include "git2/odb_backend.h"
 
@@ -270,7 +273,7 @@ static int fetch_setup_walk(git_revwalk **out, git_repository *repo)
 	git_revwalk *walk = NULL;
 	git_strarray refs;
 	unsigned int i;
-	git_reference *ref;
+	git_reference *ref = NULL;
 	int error;
 
 	if ((error = git_reference_list(&refs, repo)) < 0)
@@ -282,6 +285,9 @@ static int fetch_setup_walk(git_revwalk **out, git_repository *repo)
 	git_revwalk_sorting(walk, GIT_SORT_TIME);
 
 	for (i = 0; i < refs.count; ++i) {
+		git_reference_free(ref);
+		ref = NULL;
+
 		/* No tags */
 		if (!git__prefixcmp(refs.strings[i], GIT_REFS_TAGS_DIR))
 			continue;
@@ -294,16 +300,13 @@ static int fetch_setup_walk(git_revwalk **out, git_repository *repo)
 
 		if ((error = git_revwalk_push(walk, git_reference_target(ref))) < 0)
 			goto on_error;
-
-		git_reference_free(ref);
 	}
 
-	git_strarray_free(&refs);
 	*out = walk;
-	return 0;
 
 on_error:
-	git_revwalk_free(walk);
+	if (error)
+		git_revwalk_free(walk);
 	git_reference_free(ref);
 	git_strarray_free(&refs);
 	return error;
@@ -647,11 +650,6 @@ done:
 	return error;
 }
 
-#ifdef _WIN32
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat"
-#endif
-
 static int gen_pktline(git_buf *buf, git_push *push)
 {
 	push_spec *spec;
@@ -692,10 +690,6 @@ static int gen_pktline(git_buf *buf, git_push *push)
 	git_buf_puts(buf, "0000");
 	return git_buf_oom(buf) ? -1 : 0;
 }
-
-#ifdef _WIN32
-#pragma GCC diagnostic pop
-#endif
 
 static int add_push_report_pkt(git_push *push, git_pkt *pkt)
 {

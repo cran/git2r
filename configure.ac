@@ -35,6 +35,9 @@ case "${host_os}" in
     ;;
 esac
 
+# Check for pkg-config
+PKG_PROG_PKG_CONFIG
+
 # Optional include and library paths
 
 # zlib include and library path
@@ -89,7 +92,16 @@ if test "x$ac_cv_sizeof_voidp" = "x8"; then
 elif test "x$ac_cv_sizeof_voidp" = "x4"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
 else
-    AC_MSG_FAILURE([Unsupported architecture])
+    AC_MSG_CHECKING([size of void*])
+    sizeof_voidp=`"${RBIN}" --slave -e "cat(.Machine\\$sizeof.pointer)"`
+    AC_MSG_RESULT([$sizeof_voidp])
+    if test "x$sizeof_voidp" = "x8"; then
+        CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
+    elif test "x$sizeof_voidp" = "x4"; then
+        CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
+    else
+        AC_MSG_FAILURE([Unsupported architecture])
+    fi
 fi
 
 # Check for zlib
@@ -106,6 +118,15 @@ if test [ -n "$zlib_lib_path" ] ; then
 fi
 
 AC_SEARCH_LIBS([inflate], [z], [have_zlib=yes])
+
+if test "x${have_zlib}" = xno; then
+    if test [ -n "$PKG_CONFIG" ] ; then
+        PKG_CHECK_MODULES([zlib], [zlib],
+                          [CPPFLAGS="${zlib_CFLAGS} ${CPPFLAGS}"
+                           LIBS="${zlib_LIBS} ${LIBS}"
+                           have_zlib=yes], [ ])
+    fi
+fi
 
 if test "x${have_zlib}" = xno; then
         AC_MSG_FAILURE([
@@ -128,14 +149,6 @@ fi
 
 # Check for SSL
 have_ssl=no
-
-PKG_PROG_PKG_CONFIG
-AS_IF([test x != "x${PKG_CONFIG}"],
-      [PKG_CHECK_MODULES([libssl], [libssl],
-                         [CPPFLAGS="${libssl_CFLAGS} ${CPPFLAGS}"
-                          LIBS="${libssl_LIBS} ${LIBS}"],
-                         [AC_MSG_WARN("pkg-config failed to find libssl.")])],
-      [AC_MSG_WARN("pkg-config not found. Proceeding without it")])
 
 # Check for optional libssl include path
 if test [ -n "$libssl_include_path" ] ; then
@@ -165,6 +178,15 @@ AC_SEARCH_LIBS([EVP_EncryptInit],
                [crypto],
                [AC_SEARCH_LIBS([SSL_library_init], [ssl], [have_ssl=yes])
                 AC_SEARCH_LIBS([OPENSSL_init_ssl], [ssl], [have_ssl=yes])])
+
+if test "x${have_ssl}" = xno; then
+    if test [ -n "$PKG_CONFIG" ] ; then
+        PKG_CHECK_MODULES([openssl], [openssl],
+                          [CPPFLAGS="${openssl_CFLAGS} ${CPPFLAGS}"
+                           LIBS="${openssl_LIBS} ${LIBS}"
+                           have_ssl=yes], [ ])
+    fi
+fi
 
 if test "x${have_ssl}" = xno; then
     AC_MSG_FAILURE([
@@ -245,6 +267,15 @@ case "${host_os}" in
 esac
 
 if test "x${have_ssh2}" = xno; then
+    if test [ -n "$PKG_CONFIG" ] ; then
+        PKG_CHECK_MODULES([libssh2], [libssh2],
+                          [CPPFLAGS="${libssh2_CFLAGS} ${CPPFLAGS}"
+                           LIBS="${libssh2_LIBS} ${LIBS}"
+                           have_ssh2=yes], [ ])
+    fi
+fi
+
+if test "x${have_ssh2}" = xno; then
     AC_MSG_WARN([
   ---------------------------------------------
    Unable to find the LibSSH2 library on this
@@ -295,7 +326,7 @@ esac
 CPPFLAGS="-I. -Ilibgit2/src -Ilibgit2/include -Ilibgit2/deps/http-parser ${CPPFLAGS}"
 
 # Add definitions
-CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DGIT_OPENSSL"
+CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DGIT_OPENSSL -DLIBGIT2_NO_FEATURES_H"
 
 # Specify sha1 implementation
 case "${host_os}" in

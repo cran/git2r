@@ -4,13 +4,14 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
-#include "common.h"
+
 #include "global.h"
+
 #include "hash.h"
 #include "sysdir.h"
 #include "filter.h"
 #include "merge_driver.h"
-#include "openssl_stream.h"
+#include "streams/openssl.h"
 #include "thread-utils.h"
 #include "git2/global.h"
 #include "transports/ssh.h"
@@ -70,11 +71,6 @@ static int init_common(void)
 	return ret;
 }
 
-#ifdef _WIN32
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-
 static void shutdown_common(void)
 {
 	int pos;
@@ -94,10 +90,6 @@ static void shutdown_common(void)
 	git__free(git__user_agent);
 	git__free(git__ssl_ciphers);
 }
-
-#ifdef _WIN32
-#pragma GCC diagnostic pop
-#endif
 
 /**
  * Handle the global state with TLS

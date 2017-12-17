@@ -5,11 +5,11 @@
  * a Linking Exception. For full terms see the included COPYING file.
  */
 
+#include "fetchhead.h"
+
 #include "git2/types.h"
 #include "git2/oid.h"
 
-#include "fetchhead.h"
-#include "common.h"
 #include "buffer.h"
 #include "fileops.h"
 #include "filebuf.h"
@@ -132,11 +132,6 @@ int git_fetchhead_write(git_repository *repo, git_vector *fetchhead_refs)
 
 	return git_filebuf_commit(&file);
 }
-
-#ifdef _WIN32
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat"
-#endif
 
 static int fetchhead_ref_parse(
 	git_oid *oid,
@@ -294,10 +289,6 @@ done:
 
 	return error;
 }
-
-#ifdef _WIN32
-#pragma GCC diagnostic pop
-#endif
 
 void git_fetchhead_ref_free(git_fetchhead_ref *fetchhead_ref)
 {

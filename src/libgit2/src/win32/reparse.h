@@ -14,14 +14,11 @@
 * It was formerly included in the Windows 2000 SDK and remains defined in
 * MinGW, so we must define it with a silly name to avoid conflicting.
 */
-#ifdef _WIN32
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
 typedef struct _GIT_REPARSE_DATA_BUFFER {
 	ULONG  ReparseTag;
 	USHORT ReparseDataLength;
 	USHORT Reserved;
-	union {
+	_ANONYMOUS_UNION union {
 		struct {
 			USHORT SubstituteNameOffset;
 			USHORT SubstituteNameLength;
@@ -40,10 +37,8 @@ typedef struct _GIT_REPARSE_DATA_BUFFER {
 		struct {
 			UCHAR DataBuffer[1];
 		} GenericReparseBuffer;
-	};
+	} DUMMYUNIONNAME;
 } GIT_REPARSE_DATA_BUFFER;
-#pragma GCC diagnostic pop
-#endif
 
 #define REPARSE_DATA_HEADER_SIZE			8
 #define REPARSE_DATA_MOUNTPOINT_HEADER_SIZE	8
