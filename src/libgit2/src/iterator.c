@@ -6,7 +6,6 @@
  */
 
 #include "iterator.h"
-
 #include "tree.h"
 #include "index.h"
 

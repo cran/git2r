@@ -5,11 +5,10 @@
  * a Linking Exception. For full terms see the included COPYING file.
  */
 
-#include "indexer.h"
-
 #include "git2/indexer.h"
 #include "git2/object.h"
 
+#include "common.h"
 #include "pack.h"
 #include "mwindow.h"
 #include "posix.h"
@@ -951,10 +950,6 @@ int git_indexer_commit(git_indexer *idx, git_transfer_progress *stats)
 		giterr_set(GITERR_INDEXER, "unexpected data at the end of the pack");
 		return -1;
 	}
-	if (idx->off + 20 > idx->pack->mwf.size) {
-		giterr_set(GITERR_INDEXER, "missing trailer at the end of the pack");
-		return -1;
-	}
 
 	packfile_trailer = git_mwindow_open(&idx->pack->mwf, &w, idx->pack->mwf.size - GIT_OID_RAWSZ, GIT_OID_RAWSZ, &left);
 	if (packfile_trailer == NULL) {
@@ -1122,9 +1117,6 @@ void git_indexer_free(git_indexer *idx)
 {
 	if (idx == NULL)
 		return;
-
-	if (idx->have_stream)
-		git_packfile_stream_free(&idx->stream);
 
 	git_vector_free_deep(&idx->objects);
 
