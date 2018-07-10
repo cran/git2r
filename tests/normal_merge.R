@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -55,14 +55,14 @@ add(repo, "example-2.txt")
 commit(repo, "Fourth commit message")
 
 ## Merge 'fix'
-git2r:::merge_named_branch(repo, "fix", TRUE, default_signature(repo))
+merge(repo, "fix", TRUE, default_signature(repo))
 
 ## Check number of parents of each commit
 stopifnot(identical(sapply(commits(repo), function(x) length(parents(x))),
                     c(2L, 1L, 1L, 1L, 0L)))
 
 ## Check that last commit is a merge
-stopifnot(is_merge(lookup(repo, branch_target(head(repo)))))
+stopifnot(is_merge(lookup(repo, branch_target(repository_head(repo)))))
 
 ## Check that metadata associated with merge is removed
 stopifnot(!file.exists(file.path(path, ".git", "MERGE_HEAD")))

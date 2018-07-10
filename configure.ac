@@ -1,5 +1,5 @@
 # git2r, R bindings to the libgit2 library.
-# Copyright (C) 2013-2017 The git2r contributors
+# Copyright (C) 2013-2018 The git2r contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2,
@@ -24,98 +24,139 @@ AC_CANONICAL_HOST
 # Checks for programs.
 AC_PROG_CC
 
-## check for brew on OS X
+## Check for brew on macOS
 AC_DEFUN([AC_PROG_BREW], [AC_CHECK_PROG(BREW,brew,yes)])
-case "${host_os}" in
-    darwin*)
-        AC_PROG_BREW
-        if test "x${BREW}" = xyes; then
-            BREW_DIR=`brew --prefix`
-        fi
-    ;;
-esac
 
 # Check for pkg-config
 PKG_PROG_PKG_CONFIG
 
-# Optional include and library paths
-
-# zlib include and library path
-AC_ARG_WITH([zlib-include],
-            AC_HELP_STRING([--with-zlib-include=INCLUDE_PATH],
-                           [the location of the zlib header files]),
-            [zlib_include_path=$withval])
-
-AC_ARG_WITH([zlib-lib],
-            AC_HELP_STRING([--with-zlib-lib=LIB_PATH],
-                           [the location of the zlib library]),
-            [zlib_lib_path=$withval])
-
-# LibSSH2 include and library path
-AC_ARG_WITH([libssh2-include],
-            AC_HELP_STRING([--with-libssh2-include=INCLUDE_PATH],
-                           [the location of the LibSSH2 header files]),
-            [libssh2_include_path=$withval])
-
-AC_ARG_WITH([libssh2-lib],
-            AC_HELP_STRING([--with-libssh2-lib=LIB_PATH],
-                           [the location of the LibSSH2 library]),
-            [libssh2_lib_path=$withval])
-
-# libssl include and library path
-AC_ARG_WITH([libssl-include],
-            AC_HELP_STRING([--with-libssl-include=INCLUDE_PATH],
-                           [the location of the libssl header files]),
-            [libssl_include_path=$withval])
-
-AC_ARG_WITH([libssl-lib],
-            AC_HELP_STRING([--with-libssl-lib=LIB_PATH],
-                           [the location of the libssl library]),
-            [libssl_lib_path=$withval])
-
-# Find the compiler and compiler flags to use
+# Check for R
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
+    AC_MSG_FAILURE([Could not determine R_HOME])
 fi
 RBIN="${R_HOME}/bin/R"
+
+# Library settings
+m4_pattern_allow([PKG_CONFIG_NAME])
+m4_pattern_allow([PKG_BREW_NAME])
+PKG_CONFIG_NAME="libgit2"
+PKG_BREW_NAME="libgit2"
+PKG_LIBS="-lgit2"
+PKG_CFLAGS=""
+
+# Check if building against bundled libgit2 or system libgit2
+USE_BUNDLED_LIBGIT2=yes
+if test "x${INCLUDE_DIR}${LIB_DIR}" = x; then
+    if test [ -n "$PKG_CONFIG" ] ; then
+        PKGCONFIG_CFLAGS=`"${PKG_CONFIG}" --cflags "${PKG_CONFIG_NAME}"`
+        PKGCONFIG_LIBS=`"${PKG_CONFIG}" --libs "${PKG_CONFIG_NAME}"`
+    fi
+
+    # Hack for CRAN server: do not use preinstalled libgit2
+    CRAN_server=no
+    AC_CHECK_FILE([/Builds/CRAN-QA-Simon], [CRAN_server=yes], [
+    AC_CHECK_FILE([/Volumes/SSD-Data/Builds], [CRAN_server=yes], [ ])])
+    if test "x${CRAN_server}" = xyes; then
+        unset PKGCONFIG_CFLAGS
+        unset PKGCONFIG_LIBS
+    fi
+
+    if test "x${PKGCONFIG_CFLAGS}${PKGCONFIG_LIBS}" = x; then
+        case "${host_os}" in
+            darwin*)
+                AC_PROG_BREW
+                if test "x${BREW}" = xyes; then
+                    BREWDIR=`brew --prefix`
+                else
+                    curl -sfL "https://jeroen.github.io/autobrew/${PKG_BREW_NAME}" > autobrew
+                    source autobrew
+                fi
+                USE_BUNDLED_LIBGIT2=no
+            ;;
+        esac
+    else
+        echo "Found pkg-config cflags and libs!"
+        PKG_CFLAGS="${PKGCONFIG_CFLAGS}"
+        PKG_LIBS="${PKGCONFIG_LIBS}"
+        USE_BUNDLED_LIBGIT2=no
+    fi
+else
+    echo "Found INCLUDE_DIR and/or LIB_DIR!"
+    PKG_CFLAGS="-I${INCLUDE_DIR} ${PKG_CFLAGS}"
+    PKG_LIBS="-L${LIB_DIR} ${PKG_LIBS}"
+    USE_BUNDLED_LIBGIT2=no,
+fi
+
+################# Begin configuration to use system libgit2 ##################
+if test "x${USE_BUNDLED_LIBGIT2}" = xno; then
+    # Find the compiler and compiler flags to use
+    CC=`"${RBIN}" CMD config CC`
+    CFLAGS=`"${RBIN}" CMD config CFLAGS`
+    CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
+
+    AC_MSG_CHECKING([whether the libgit2 version will work in git2r])
+    libgit2_ver_ok=no
+    ${CC} ${CPPFLAGS} ${PKG_CFLAGS} ${CFLAGS} -E tools/version.c >/dev/null 2>&1 && libgit2_ver_ok=yes
+    AC_MSG_RESULT([${libgit2_ver_ok}])
+
+    # For debugging
+    echo "----- Results of the git2r package configure -----"
+    echo ""
+    echo "  PKG_CFLAGS: ${PKG_CFLAGS}"
+    echo "  PKG_LIBS: ${PKG_LIBS}"
+    echo ""
+    echo "--------------------------------------------------"
+
+    if test "x${libgit2_ver_ok}" = xno; then
+        AC_MSG_FAILURE([
+  ---------------------------------------------
+   The libgit2 library that is required to build git2r was not found.
+
+   Please install:
+     libgit2-dev   (package on e.g. Debian and Ubuntu)
+     libgit2-devel (package on e.g. Fedora, CentOS and RHEL)
+     libgit2       (Homebrew package on macOS)
+   and try again.
+
+   If the libgit2 library is installed on your system but the git2r configuration is
+   unable to find it, you can specify the include and lib path to libgit2 with:
+   R CMD INSTALL git2r --configure-vars='INCLUDE_DIR=path/to/include LIB_DIR=path/to/lib'
+  ---------------------------------------------])
+    fi
+
+    AC_SUBST([PKG_CFLAGS], ["${PKG_CFLAGS}"])
+    AC_SUBST([PKG_LIBS], ["${PKG_LIBS}"])
+    AC_CONFIG_FILES([src/Makevars])
+
+    AC_OUTPUT
+fi
+################# End configuration to use system libgit2 ####################
+
+################# Begin configuration to build bundled libgit2 ###############
+if test "x${USE_BUNDLED_LIBGIT2}" = xyes; then
+
+AC_MSG_NOTICE([Attempting configuration of bundled libgit2])
+
+# Find the compiler and compiler flags to use
 CC=`"${RBIN}" CMD config CC`
 CFLAGS=`"${RBIN}" CMD config CFLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
-CPICFLAGS=`"${RBIN}" CMD config CPICFLAGS`
 
-# Determine architecture of the machine
-AC_CHECK_SIZEOF([void*])
-if test "x$ac_cv_sizeof_voidp" = "x8"; then
+# Use R to determine architecture of the machine
+AC_MSG_CHECKING([size of void*])
+sizeof_voidp=`"${RBIN}" --slave --vanilla -e "cat(.Machine\\$sizeof.pointer)"`
+AC_MSG_RESULT([$sizeof_voidp])
+if test "x$sizeof_voidp" = "x8"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
-elif test "x$ac_cv_sizeof_voidp" = "x4"; then
+elif test "x$sizeof_voidp" = "x4"; then
     CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
 else
-    AC_MSG_CHECKING([size of void*])
-    sizeof_voidp=`"${RBIN}" --slave -e "cat(.Machine\\$sizeof.pointer)"`
-    AC_MSG_RESULT([$sizeof_voidp])
-    if test "x$sizeof_voidp" = "x8"; then
-        CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_64"
-    elif test "x$sizeof_voidp" = "x4"; then
-        CPPFLAGS="${CPPFLAGS} -DGIT_ARCH_32"
-    else
-        AC_MSG_FAILURE([Unsupported architecture])
-    fi
+    AC_MSG_FAILURE([Unsupported architecture])
 fi
 
 # Check for zlib
 have_zlib=no
-
-# Check for optional zlib include path
-if test [ -n "$zlib_include_path" ] ; then
-    CPPFLAGS="-I${zlib_include_path} ${CPPFLAGS}"
-fi
-
-# Check for optional zlib lib path
-if test [ -n "$zlib_lib_path" ] ; then
-    LIBS="-L${zlib_lib_path} ${LIBS}"
-fi
 
 AC_SEARCH_LIBS([inflate], [z], [have_zlib=yes])
 
@@ -143,36 +184,16 @@ if test "x${have_zlib}" = xno; then
    system but the git2r configuration is
    unable to find it, you can specify the
    include and lib path to zlib with:
-   R CMD INSTALL --configure-args='--with-zlib-include=INCLUDE_PATH --with-zlib-lib=LIB_PATH' git2r
+   R CMD INSTALL git2r --configure-vars='LIBS=-L/path/to/libs CPPFLAGS=-I/path/to/headers'
   ---------------------------------------------])
 fi
 
 # Check for SSL
 have_ssl=no
 
-# Check for optional libssl include path
-if test [ -n "$libssl_include_path" ] ; then
-    CPPFLAGS="-I${libssl_include_path} ${CPPFLAGS}"
-fi
-
-# Check for optional libssl lib path
-if test [ -n "$libssl_lib_path" ] ; then
-    LIBS="-L${libssl_lib_path} ${LIBS}"
-fi
-
 if test "x${OPENSSL_INCLUDES}" = x; then :; else
     CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
 fi
-
-# On OS X, add path to libssl in brew
-case "${host_os}" in
-    darwin*)
-        if test "x${BREW}" = xyes; then
-            CPPFLAGS="${CPPFLAGS} -I${BREW_DIR}/opt/openssl/include"
-            LIBS="${LIBS} -L${BREW_DIR}/opt/openssl/lib"
-        fi
-    ;;
-esac
 
 AC_SEARCH_LIBS([EVP_EncryptInit],
                [crypto],
@@ -197,74 +218,19 @@ if test "x${have_ssl}" = xno; then
    Please install:
      libssl-dev    (package on e.g. Debian and Ubuntu)
      openssl-devel (package on e.g. Fedora, CentOS and RHEL)
-     openssl       (Homebrew package on OS X)
    and try again.
 
    If the OpenSSL library is installed on
    your system but the git2r configuration
    is unable to find it, you can specify
    the include and lib path to OpenSSL with:
-   R CMD INSTALL --configure-args='--with-libssl-include=INCLUDE_PATH --with-libssl-lib=LIB_PATH' git2r
+   R CMD INSTALL git2r --configure-vars='LIBS=-L/path/to/libs CPPFLAGS=-I/path/to/headers'
   ---------------------------------------------])
 fi
 
 # Check for LibSSH2
 have_ssh2=no
-
-# Check for optional libssh2 include path
-if test [ -n "$libssh2_include_path" ] ; then
-    CPPFLAGS="-I${libssh2_include_path} ${CPPFLAGS}"
-fi
-
-# Check for optional libssh2 lib path
-if test [ -n "$libssh2_lib_path" ] ; then
-    LIBS="-L${libssh2_lib_path} ${LIBS}"
-fi
-
-case "${host_os}" in
-    darwin*)
-        # Save flags
-        oCPPFLAGS="${CPPFLAGS}"
-        oLIBS="${LIBS}"
-
-        # On OS X, try to find libssh2 in brew
-        if test "x${BREW}" = xyes; then
-            CPPFLAGS="${CPPFLAGS} -I${BREW_DIR}/opt/libssh2/include"
-            LIBS="${LIBS} -L${BREW_DIR}/opt/libssh2/lib"
-            AC_SEARCH_LIBS([libssh2_version], [ssh2], [have_ssh2=yes])
-        fi
-
-        if test "x${have_ssh2}" = xno; then
-            CPPFLAGS="${oCPPFLAGS}"
-            LIBS="${oLIBS}"
-
-            AC_MSG_NOTICE([Download and build libssh2])
-
-            mkdir -p libssh2 && \
-            curl -fsSL https://www.libssh2.org/download/libssh2-1.8.0.tar.gz | \
-            tar xz --strip 1 -C libssh2
-
-            mkdir -p src/libgit2/deps/libssh2
-            LIBSSH2_INST_DIR="${PWD}/src/libgit2/deps/libssh2"
-            cp -f tools/missing libssh2
-            cd libssh2
-            ./configure --with-pic --with-openssl --disable-examples-build \
-              --disable-shared --enable-static --prefix=$LIBSSH2_INST_DIR \
-              CC="${CC}" CFLAGS="${CFLAGS} ${CPICFLAGS} -Wno-deprecated-declarations" \
-              CPPFLAGS="${CPPFLAGS}" && make && make install && have_ssh2=yes
-            cd ..
-            rm -rf libssh2
-
-            if test "x${have_ssh2}" = xyes; then
-                LIBSSH2_CFLAGS="-Ilibgit2/deps/libssh2/include"
-                LIBSSH2_LIBS="-Llibgit2/deps/libssh2/lib -lssh2"
-            fi
-        fi
-    ;;
-    *)
-        AC_SEARCH_LIBS([libssh2_version], [ssh2], [have_ssh2=yes])
-    ;;
-esac
+AC_SEARCH_LIBS([libssh2_version], [ssh2], [have_ssh2=yes])
 
 if test "x${have_ssh2}" = xno; then
     if test [ -n "$PKG_CONFIG" ] ; then
@@ -285,27 +251,15 @@ if test "x${have_ssh2}" = xno; then
    To build with SSH support, please install:
      libssh2-1-dev (package on e.g. Debian and Ubuntu)
      libssh2-devel (package on e.g. Fedora, CentOS and RHEL)
-     libssh2       (Homebrew package on OS X)
    and try again.
 
    If the LibSSH2 library is installed on
    your system but the git2r configuration
    is unable to find it, you can specify
    the include and lib path to LibSSH2 with:
-   R CMD INSTALL --configure-args='--with-libssh2-include=INCLUDE_PATH --with-libssh2-lib=LIB_PATH' git2r
+   R CMD INSTALL git2r --configure-vars='LIBS=-L/path/to/libs CPPFLAGS=-I/path/to/headers'
   ---------------------------------------------])
 fi
-
-# Check for iconv
-have_iconv=no
-case "${host_os}" in
-    darwin*)
-        AM_ICONV
-        if test "x${am_cv_func_iconv}" = xyes; then
-            have_iconv=yes
-        fi
-    ;;
-esac
 
 # Check for libcurl
 LIBCURL_CHECK_CONFIG(, , [have_libcurl=yes], [have_libcurl=no])
@@ -326,18 +280,7 @@ esac
 CPPFLAGS="-I. -Ilibgit2/src -Ilibgit2/include -Ilibgit2/deps/http-parser ${CPPFLAGS}"
 
 # Add definitions
-CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DGIT_OPENSSL -DLIBGIT2_NO_FEATURES_H"
-
-# Specify sha1 implementation
-case "${host_os}" in
-    darwin*)
-        PKG_CFLAGS="-Wno-deprecated-declarations"
-        CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_COMMON_CRYPTO"
-    ;;
-    *)
-        CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_OPENSSL"
-    ;;
-esac
+CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DGIT_OPENSSL -DGIT_SHA1_OPENSSL -DGIT_HTTPS=1 -DLIBGIT2_NO_FEATURES_H -DR_NO_REMAP -DSTRICT_R_HEADERS"
 
 # Add definition for ssh
 if test "x${have_ssh2}" = xyes; then
@@ -364,45 +307,24 @@ esac
 # Checks for structures
 AC_CHECK_MEMBER([struct stat.st_mtim],
                 [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIM"],
-                [],
-                [#ifdef HAVE_SYS_TYPES_H
-                 # include <sys/types.h>
-                 #endif
-                 #ifdef HAVE_SYS_STAT_H
-                 # include <sys/stat.h>
-                 #endif])
+                [], [AC_INCLUDES_DEFAULT])
 
 AC_CHECK_MEMBER([struct stat.st_mtimespec],
                 [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIMESPEC"],
-                [],
-                [#ifdef HAVE_SYS_TYPES_H
-                 # include <sys/types.h>
-                 #endif
-                 #ifdef HAVE_SYS_STAT_H
-                 # include <sys/stat.h>
-                 #endif])
+                [], [AC_INCLUDES_DEFAULT])
 
 AC_CHECK_MEMBER([struct stat.st_mtime_nsec],
                 [CPPFLAGS="${CPPFLAGS} -DGIT_USE_STAT_MTIME_NSEC"],
-                [],
-                [#ifdef HAVE_SYS_STAT_H
-                 # include <sys/stat.h>
-                 #endif])
+                [], [AC_INCLUDES_DEFAULT])
 
 if test "x$ac_cv_member_struct_stat_st_mtim" = "xyes"; then
     AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
                     [CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"],
-                    [],
-                    [#ifdef HAVE_SYS_STAT_H
-                     # include <sys/stat.h>
-                     #endif])
+                    [], [AC_INCLUDES_DEFAULT])
 elif test "x$ac_cv_member_struct_stat_st_mtimespec" = "xyes"; then
     AC_CHECK_MEMBER([struct stat.st_mtimespec.tv_nsec],
                     [CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"],
-                    [],
-                    [#ifdef HAVE_SYS_STAT_H
-                     # include <sys/stat.h>
-                     #endif])
+                    [], [AC_INCLUDES_DEFAULT])
 else
     CPPFLAGS="${CPPFLAGS} -DGIT_USE_NSEC"
 fi
@@ -427,7 +349,7 @@ AC_SUBST([PKG_CFLAGS], ["${PKG_CFLAGS} ${LIBSSH2_CFLAGS}"])
 AC_SUBST([PKG_CPPFLAGS], ["${CPPFLAGS} ${LIBCURL_CPPFLAGS}"])
 AC_SUBST([PKG_LIBS], ["${LIBS} ${LIBSSH2_LIBS} ${LIBCURL} ${LIBICONV}"])
 
-AC_CONFIG_FILES([src/Makevars])
+AC_CONFIG_FILES([src/Makevars_libgit2])
 
 echo "
   ----- Results of the git2r package configure -----
@@ -439,3 +361,8 @@ echo "
 "
 
 AC_OUTPUT
+
+cd src; mv Makevars_libgit2 Makevars
+
+fi
+################# End configuration to build bundled libgit2 #################

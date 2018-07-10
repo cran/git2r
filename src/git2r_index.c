@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2016 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,7 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "git2.h"
+#include <git2.h>
 
 #include "git2r_arg.h"
 #include "git2r_error.h"
@@ -27,14 +27,14 @@
  * Add or update index entries matching files in the working
  * directory.
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @param path array of path patterns
  * @param force if TRUE, add ignored files.
  * @return R_NilValue
  */
 SEXP git2r_index_add_all(SEXP repo, SEXP path, SEXP force)
 {
-    int err = GIT_OK;
+    int error = 0;
     unsigned int flags = 0;
     git_strarray pathspec = {0};
     git_index *index = NULL;
@@ -49,34 +49,29 @@ SEXP git2r_index_add_all(SEXP repo, SEXP path, SEXP force)
     if (!repository)
         git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    err = git2r_copy_string_vec(&pathspec, path);
-    if (err || !pathspec.count)
+    error = git2r_copy_string_vec(&pathspec, path);
+    if (error || !pathspec.count)
         goto cleanup;
 
-    err = git_repository_index(&index, repository);
-    if (err)
+    error = git_repository_index(&index, repository);
+    if (error)
         goto cleanup;
 
     if (LOGICAL(force)[0])
         flags |= GIT_INDEX_ADD_FORCE;
 
-    err = git_index_add_all(index, &pathspec, flags, NULL, NULL);
-    if (err)
+    error = git_index_add_all(index, &pathspec, flags, NULL, NULL);
+    if (error)
         goto cleanup;
 
-    err = git_index_write(index);
+    error = git_index_write(index);
 
 cleanup:
-    if (pathspec.strings)
-        free(pathspec.strings);
+    free(pathspec.strings);
+    git_index_free(index);
+    git_repository_free(repository);
 
-    if (index)
-        git_index_free(index);
-
-    if (repository)
-        git_repository_free(repository);
-
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
@@ -86,13 +81,13 @@ cleanup:
  * Remove an index entry corresponding to a file relative to the
  * repository's working folder.
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @param path array of path patterns
  * @return R_NilValue
  */
 SEXP git2r_index_remove_bypath(SEXP repo, SEXP path)
 {
-    int err;
+    int error = 0;
     size_t i, len;
     git_index *index = NULL;
     git_repository *repository = NULL;
@@ -100,33 +95,33 @@ SEXP git2r_index_remove_bypath(SEXP repo, SEXP path)
     if (git2r_arg_check_string_vec(path))
         git2r_error(__func__, NULL, "'path'", git2r_err_string_vec_arg);
 
+    len = Rf_length(path);
+    if (!len)
+        goto cleanup;
+
     repository= git2r_repository_open(repo);
     if (!repository)
         git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    err = git_repository_index(&index, repository);
-    if (err)
+    error = git_repository_index(&index, repository);
+    if (error)
         goto cleanup;
 
-    len = length(path);
     for (i = 0; i < len; i++) {
         if (NA_STRING != STRING_ELT(path, i)) {
-            err = git_index_remove_bypath(index, CHAR(STRING_ELT(path, i)));
-            if (err)
+            error = git_index_remove_bypath(index, CHAR(STRING_ELT(path, i)));
+            if (error)
                 goto cleanup;
         }
     }
 
-    err = git_index_write(index);
+    error = git_index_write(index);
 
 cleanup:
-    if (index)
-        git_index_free(index);
+    git_index_free(index);
+    git_repository_free(repository);
 
-    if (repository)
-        git_repository_free(repository);
-
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;

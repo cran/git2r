@@ -6,6 +6,7 @@
  */
 
 #include "refs.h"
+
 #include "hash.h"
 #include "repository.h"
 #include "fileops.h"
@@ -113,6 +114,9 @@ int git_reference_dup(git_reference **dest, git_reference *source)
 		*dest = git_reference__alloc(source->name, &source->target.oid, &source->peel);
 
 	GITERR_CHECK_ALLOC(*dest);
+
+	(*dest)->db = source->db;
+	GIT_REFCOUNT_INC((*dest)->db);
 
 	return 0;
 }
@@ -1359,7 +1363,13 @@ int git_reference_peel(
 			return peel_error(error, ref, "Cannot resolve reference");
 	}
 
-	if (!git_oid_iszero(&resolved->peel)) {
+	/*
+	 * If we try to peel an object to a tag, we cannot use
+	 * the fully peeled object, as that will always resolve
+	 * to a commit. So we only want to use the peeled value
+	 * if it is not zero and the target is not a tag.
+	 */
+	if (target_type != GIT_OBJ_TAG && !git_oid_iszero(&resolved->peel)) {
 		error = git_object_lookup(&target,
 			git_reference_owner(ref), &resolved->peel, GIT_OBJ_ANY);
 	} else {

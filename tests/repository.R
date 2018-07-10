@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013 - 2016 The git2r contributors
+## Copyright (C) 2013 - 2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -36,20 +36,19 @@ tools::assertError(repository(path))
 repo <- init(path)
 
 ## Check the state of the repository
-stopifnot(validObject(repo))
 stopifnot(identical(is_bare(repo), FALSE))
 stopifnot(identical(is_empty(repo), TRUE))
 stopifnot(identical(is_shallow(repo), FALSE))
 stopifnot(identical(branches(repo), structure(list(), .Names = character(0))))
 stopifnot(identical(references(repo), structure(list(), .Names = character(0))))
 stopifnot(identical(commits(repo), list()))
-stopifnot(identical(head(repo), NULL))
+stopifnot(identical(repository_head(repo), NULL))
 
 # check that we can find repository from a path
 wd <- sub(paste0("[", .Platform$file.sep, "]$"), "",  workdir(repo))
 writeLines('test file', con = file.path(wd, "myfile.txt"))
 stopifnot(identical(discover_repository(file.path(wd, "myfile.txt")),
-                    paste0(file.path(wd, ".git"), .Platform$file.sep)))
+                    file.path(wd, ".git")))
 stopifnot(identical(discover_repository(file.path(wd, "doesntexist.txt")),
                     NULL))
 
@@ -57,7 +56,7 @@ stopifnot(identical(discover_repository(file.path(wd, "doesntexist.txt")),
 dir.create(file.path(wd, "temp"))
 stopifnot(identical(discover_repository(file.path(wd, "temp"), 0), NULL))
 stopifnot(identical(discover_repository(file.path(wd, "temp"), 1),
-                    paste0(file.path(wd, ".git"), .Platform$file.sep)))
+                    file.path(wd, ".git")))
 tools::assertError(discover_repository(file.path(wd, "temp"), 2))
 
 ## Check that lookup with a sha of less than 4 characters or more than

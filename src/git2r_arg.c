@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,11 +16,11 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <Rdefines.h>
-#include "git2.h"
+#include <git2.h>
 
 #include "git2r_arg.h"
 #include "git2r_error.h"
+#include "git2r_S3.h"
 
 /**
  * Check blob argument
@@ -30,16 +30,10 @@
  */
 int git2r_arg_check_blob(SEXP arg)
 {
-    SEXP class_name;
-
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_blob"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_blob"))
-        return -1;
-
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("sha"))))
+    if (git2r_arg_check_sha(git2r_get_list_element(arg, "sha")))
         return -1;
 
     return 0;
@@ -53,20 +47,15 @@ int git2r_arg_check_blob(SEXP arg)
  */
 int git2r_arg_check_branch(SEXP arg)
 {
-    SEXP class_name;
     SEXP slot;
 
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_branch"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_branch"))
+    if (git2r_arg_check_string(git2r_get_list_element(arg, "name")))
         return -1;
 
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("name"))))
-        return -1;
-
-    slot = GET_SLOT(arg, Rf_install("type"));
+    slot = git2r_get_list_element(arg, "type");
     if (git2r_arg_check_integer(slot))
         return -1;
     switch (INTEGER(slot)[0]) {
@@ -88,16 +77,30 @@ int git2r_arg_check_branch(SEXP arg)
  */
 int git2r_arg_check_commit(SEXP arg)
 {
-    SEXP class_name;
-
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_commit"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_commit"))
+    if (git2r_arg_check_sha(git2r_get_list_element(arg, "sha")))
         return -1;
 
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("sha"))))
+    return 0;
+}
+
+/**
+ * Check commit or stash argument
+ *
+ * @param arg the arg to check
+ * @return 0 if OK, else -1
+ */
+int git2r_arg_check_commit_stash(SEXP arg)
+{
+    if (!Rf_isNewList(arg))
+        return -1;
+
+    if (!Rf_inherits(arg, "git_commit") && !Rf_inherits(arg, "git_stash"))
+        return -1;
+
+    if (git2r_arg_check_sha(git2r_get_list_element(arg, "sha")))
         return -1;
 
     return 0;
@@ -111,49 +114,46 @@ int git2r_arg_check_commit(SEXP arg)
  */
 int git2r_arg_check_credentials(SEXP arg)
 {
-    SEXP class_name;
-
     /* It's ok if the credentials is R_NilValue */
-    if (isNull(arg))
+    if (Rf_isNull(arg))
         return 0;
 
-    if (S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 == strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_env")) {
+    if (Rf_inherits(arg, "cred_env")) {
         /* Check username and password */
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("username"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "username")))
             return -1;
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("password"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "password")))
             return -1;
-    } else if (0 == strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_token")) {
+    } else if (Rf_inherits(arg, "cred_token")) {
         /* Check token */
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("token"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "token")))
             return -1;
-    } else if (0 == strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_user_pass")) {
+    } else if (Rf_inherits(arg, "cred_user_pass")) {
         /* Check username and password */
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("username"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "username")))
             return -1;
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("password"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "password")))
             return -1;
-    } else if (0 == strcmp(CHAR(STRING_ELT(class_name, 0)), "cred_ssh_key")) {
+    } else if (Rf_inherits(arg, "cred_ssh_key")) {
         SEXP passphrase;
 
         /* Check public and private key */
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("publickey"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "publickey")))
             return -1;
-        if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("privatekey"))))
+        if (git2r_arg_check_string(git2r_get_list_element(arg, "privatekey")))
             return -1;
 
         /* Check that passphrase is a character vector */
-        passphrase = GET_SLOT(arg, Rf_install("passphrase"));
+        passphrase = git2r_get_list_element(arg, "passphrase");
         if (git2r_arg_check_string_vec(passphrase))
             return -1;
 
         /* Check that length of passphrase < 2, i.e. it's either
          * character(0) or some "passphrase" */
-        switch (length(passphrase)) {
+        switch (Rf_length(passphrase)) {
         case 0:
             break;
         case 1:
@@ -174,7 +174,7 @@ int git2r_arg_check_credentials(SEXP arg)
  * Check fetch_heads argument
  *
  * It's OK:
- *  - A list with S4 class git_fetch_head objects
+ *  - A list with S3 class git_fetch_head objects
  * @param arg the arg to check
  * @return 0 if OK, else -1
  */
@@ -182,27 +182,20 @@ int git2r_arg_check_fetch_heads(SEXP arg)
 {
     const char *repo = NULL;
     size_t i,n;
-    SEXP s_repo = Rf_install("repo");
-    SEXP s_path = Rf_install("path");
 
-    if (isNull(arg) || VECSXP != TYPEOF(arg))
+    if (Rf_isNull(arg) || VECSXP != TYPEOF(arg))
         return -1;
 
     /* Check that the repository paths are identical for each item */
     n = Rf_length(arg);
     for (i = 0; i < n; i++) {
         SEXP path;
-        SEXP class_name;
         SEXP item = VECTOR_ELT(arg, i);
 
-        if (isNull(item) || S4SXP != TYPEOF(item))
+        if (!Rf_isNewList(item) || !Rf_inherits(item, "git_fetch_head"))
             return -1;
 
-        class_name = getAttrib(item, R_ClassSymbol);
-        if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_fetch_head"))
-            return -1;
-
-        path = GET_SLOT(GET_SLOT(item, s_repo), s_path);
+        path = git2r_get_list_element(git2r_get_list_element(item, "repo"), "path");
         if (git2r_arg_check_string(path))
             return -1;
 
@@ -227,11 +220,11 @@ int git2r_arg_check_fetch_heads(SEXP arg)
  */
 int git2r_arg_check_filename(SEXP arg)
 {
-    if (isNull(arg))
+    if (Rf_isNull(arg))
         return 0;
-    if (!isString(arg))
+    if (!Rf_isString(arg))
         return -1;
-    switch (length(arg)) {
+    switch (Rf_length(arg)) {
     case 0:
         break;
     case 1:
@@ -275,10 +268,7 @@ int git2r_arg_check_sha(SEXP arg)
  */
 int git2r_arg_check_integer(SEXP arg)
 {
-    if (isNull(arg)
-        || !isInteger(arg)
-        || 1 != length(arg)
-        || NA_INTEGER == INTEGER(arg)[0])
+    if (!Rf_isInteger(arg) || 1 != Rf_length(arg) || NA_INTEGER == INTEGER(arg)[0])
         return -1;
     return 0;
 }
@@ -306,7 +296,7 @@ int git2r_arg_check_integer_gte_zero(SEXP arg)
  */
 int git2r_arg_check_list(SEXP arg)
 {
-    if (isNull(arg) || !isNewList(arg))
+    if (!Rf_isNewList(arg))
         return -1;
     return 0;
 }
@@ -320,10 +310,7 @@ int git2r_arg_check_list(SEXP arg)
  */
 int git2r_arg_check_logical(SEXP arg)
 {
-    if (isNull(arg)
-        || !isLogical(arg)
-        || 1 != length(arg)
-        || NA_LOGICAL == LOGICAL(arg)[0])
+    if (!Rf_isLogical(arg) || 1 != Rf_length(arg) || NA_LOGICAL == LOGICAL(arg)[0])
         return -1;
     return 0;
 }
@@ -336,19 +323,13 @@ int git2r_arg_check_logical(SEXP arg)
  */
 int git2r_arg_check_note(SEXP arg)
 {
-    SEXP class_name;
-
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_note"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_note"))
+    if (git2r_arg_check_sha(git2r_get_list_element(arg, "sha")))
         return -1;
 
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("sha"))))
-        return -1;
-
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("refname"))))
+    if (git2r_arg_check_string(git2r_get_list_element(arg, "refname")))
         return -1;
 
     return 0;
@@ -362,11 +343,46 @@ int git2r_arg_check_note(SEXP arg)
  */
 int git2r_arg_check_real(SEXP arg)
 {
-    if (isNull(arg)
-        || !isReal(arg)
-        || 1 != length(arg)
-        || !R_finite(REAL(arg)[0]))
+    if (!Rf_isReal(arg) || 1 != Rf_length(arg) || !R_finite(REAL(arg)[0]))
         return -1;
+    return 0;
+}
+
+/**
+ * Check repository argument
+ *
+ * @param arg the arg to check
+ * @return 0 if OK, else -1
+ */
+int git2r_arg_check_repository(SEXP arg)
+{
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_repository"))
+        return -1;
+
+    if (git2r_arg_check_string(git2r_get_list_element(arg, "path")))
+        return -1;
+
+    return 0;
+}
+
+/**
+ * Check if the two repositories have the same path
+ *
+ * @param arg the arg to check
+ * @return 0 if OK, else -1
+ */
+int git2r_arg_check_same_repo(SEXP arg1, SEXP arg2)
+{
+    SEXP path1, path2;
+
+    if (git2r_arg_check_repository(arg1) || git2r_arg_check_repository(arg2))
+        return -1;
+
+    path1 = git2r_get_list_element(arg1, "path");
+    path2 = git2r_get_list_element(arg2, "path");
+    if (strcmp(CHAR(STRING_ELT(path1, 0)), CHAR(STRING_ELT(path2, 0))))
+        return -1;
+
     return 0;
 }
 
@@ -378,25 +394,20 @@ int git2r_arg_check_real(SEXP arg)
  */
 int git2r_arg_check_signature(SEXP arg)
 {
-    SEXP class_name;
     SEXP when;
 
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_signature"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_signature"))
+    if (git2r_arg_check_string(git2r_get_list_element(arg, "name")))
+        return -1;
+    if (git2r_arg_check_string(git2r_get_list_element(arg, "email")))
         return -1;
 
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("name"))))
+    when = git2r_get_list_element(arg, "when");
+    if (git2r_arg_check_real(git2r_get_list_element(when, "time")))
         return -1;
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("email"))))
-        return -1;
-
-    when = GET_SLOT(arg, Rf_install("when"));
-    if (git2r_arg_check_real(GET_SLOT(when, Rf_install("time"))))
-        return -1;
-    if (git2r_arg_check_real(GET_SLOT(when, Rf_install("offset"))))
+    if (git2r_arg_check_real(git2r_get_list_element(when, "offset")))
         return -1;
 
     return 0;
@@ -414,7 +425,7 @@ int git2r_arg_check_string(SEXP arg)
 {
     if (git2r_arg_check_string_vec(arg) < 0)
         return -1;
-    if (1 != length(arg) || NA_STRING == STRING_ELT(arg, 0))
+    if (1 != Rf_length(arg) || NA_STRING == STRING_ELT(arg, 0))
         return -1;
     return 0;
 }
@@ -429,7 +440,7 @@ int git2r_arg_check_string(SEXP arg)
  */
 int git2r_arg_check_string_vec(SEXP arg)
 {
-    if (isNull(arg) || !isString(arg))
+    if (!Rf_isString(arg))
         return -1;
     return 0;
 }
@@ -447,7 +458,7 @@ int git2r_copy_string_vec(git_strarray *dst, SEXP src)
     size_t i, len;
 
     /* Count number of non NA values */
-    len = length(src);
+    len = Rf_length(src);
     for (i = 0; i < len; i++)
         if (NA_STRING != STRING_ELT(src, i))
             dst->count++;
@@ -479,16 +490,10 @@ int git2r_copy_string_vec(git_strarray *dst, SEXP src)
  */
 int git2r_arg_check_tag(SEXP arg)
 {
-    SEXP class_name;
-
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_tag"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_tag"))
-        return -1;
-
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("target"))))
+    if (git2r_arg_check_string(git2r_get_list_element(arg, "target")))
         return -1;
 
     return 0;
@@ -502,16 +507,10 @@ int git2r_arg_check_tag(SEXP arg)
  */
 int git2r_arg_check_tree(SEXP arg)
 {
-    SEXP class_name;
-
-    if (isNull(arg) || S4SXP != TYPEOF(arg))
+    if (!Rf_isNewList(arg) || !Rf_inherits(arg, "git_tree"))
         return -1;
 
-    class_name = getAttrib(arg, R_ClassSymbol);
-    if (0 != strcmp(CHAR(STRING_ELT(class_name, 0)), "git_tree"))
-        return -1;
-
-    if (git2r_arg_check_string(GET_SLOT(arg, Rf_install("sha"))))
+    if (git2r_arg_check_sha(git2r_get_list_element(arg, "sha")))
         return -1;
 
     return 0;

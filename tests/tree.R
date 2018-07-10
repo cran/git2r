@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -37,16 +37,18 @@ add(repo, "test.txt")
 commit(repo, "Commit message")
 
 ## Check tree
-stopifnot(is(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5"),
-             "git_tree"))
-stopifnot(is(tree(commits(repo)[[1]]), "git_tree"))
+stopifnot(is_tree(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5")))
+stopifnot(is_tree(tree(commits(repo)[[1]])))
 stopifnot(identical(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5"),
                     tree(commits(repo)[[1]])))
 stopifnot(identical(length(tree(commits(repo)[[1]])), 1L))
 
 ## Coerce to a data.frame and check column names
-stopifnot(identical(names(as(tree(commits(repo)[[1]]), "data.frame")),
+stopifnot(identical(names(as.data.frame(tree(commits(repo)[[1]]))),
                     c("mode", "type", "sha", "name")))
+
+## Check ls_tree
+stopifnot(identical(ls_tree(repo = repo), ls_tree(repo = path)))
 
 ## Cleanup
 unlink(path, recursive=TRUE)

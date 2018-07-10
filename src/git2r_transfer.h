@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -21,7 +21,7 @@
 
 #include <R.h>
 #include <Rinternals.h>
-#include "git2.h"
+#include <git2.h>
 
 /**
  * Data structure to hold information when performing a clone, fetch
@@ -31,11 +31,27 @@ typedef struct {
     int received_progress;
     int received_done;
     int verbose;
-    int ssh_key_agent_tried;
+
+    /* Used in the 'git2r_cred_acquire_cb' callback to determine if to
+     * use the 'ssh-agent' to find the ssh key for authentication.
+     * Only used when credentials equals R_NilValue. */
+    int use_ssh_agent;
+
+    /* Used in the 'git2r_cred_acquire_cb' callback to determine if to
+     * to search for the 'id_rsa' ssh key for authentication. Only
+     * used when credentials equals R_NilValue. FIXME: This is
+     * currently always set to zero, i.e. git2r does not automatically
+     * search for the 'id_rsa' ssh key. */
+    int use_ssh_key;
+
     SEXP credentials;
 } git2r_transfer_data;
 
-#define GIT2R_TRANSFER_DATA_INIT {0, 0, 0, 0, R_NilValue}
+#ifdef WIN32
+#  define GIT2R_TRANSFER_DATA_INIT {0, 0, 0, 1, 0, R_NilValue}
+#else
+#  define GIT2R_TRANSFER_DATA_INIT {0, 0, 0, 1, 0, R_NilValue}
+#endif
 
 void git2r_transfer_progress_init(
     const git_transfer_progress *source,

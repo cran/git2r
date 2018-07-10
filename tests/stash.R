@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -34,8 +34,16 @@ writeLines("Hello world!", file.path(path, "test-1.txt"))
 add(repo, 'test-1.txt')
 commit(repo, "Commit message")
 
-## Make one more commit
+## Apply stash
 writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "test-1.txt"))
+stash(repo)
+stopifnot(identical("Hello world!",
+                    readLines(file.path(path, "test-1.txt"))))
+stash_pop(repo)
+stopifnot(identical(c("Hello world!", "HELLO WORLD!"),
+                    readLines(file.path(path, "test-1.txt"))))
+
+## Make one more commit
 add(repo, 'test-1.txt')
 commit(repo, "Next commit message")
 
@@ -51,11 +59,14 @@ stopifnot(identical(stash_list(repo), list()))
 ## Stash
 stash(repo)
 stopifnot(identical(stash_list(repo), list()))
-stash(repo, untracked=TRUE)
+s <- stash(repo, untracked=TRUE)
+s
+summary(s)
 stopifnot(identical(length(stash_list(repo)), 1L))
+tree(stash_list(repo)[[1]])
 
 ## Drop stash
-stash_drop(repo, 0)
+stash_drop(repo, 1)
 stopifnot(identical(stash_list(repo), list()))
 
 ## Check stash_drop argument

@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -24,12 +24,11 @@
  *
  */
 
-#include <Rdefines.h>
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 
-#include "git2.h"
+#include <git2.h>
 
 #include "git2r_blame.h"
 #include "git2r_blob.h"
@@ -59,6 +58,7 @@
 #include "git2r_stash.h"
 #include "git2r_status.h"
 #include "git2r_tag.h"
+#include "git2r_tree.h"
 
 #define CALLDEF(name, n) {#name, (DL_FUNC) &name, n}
 
@@ -88,6 +88,7 @@ static const R_CallMethodDef callMethods[] =
     CALLDEF(git2r_commit, 4),
     CALLDEF(git2r_commit_parent_list, 1),
     CALLDEF(git2r_commit_tree, 1),
+    CALLDEF(git2r_config_find_file, 1),
     CALLDEF(git2r_config_get, 1),
     CALLDEF(git2r_config_get_logical, 2),
     CALLDEF(git2r_config_get_string, 2),
@@ -100,7 +101,7 @@ static const R_CallMethodDef callMethods[] =
     CALLDEF(git2r_libgit2_features, 0),
     CALLDEF(git2r_libgit2_version, 0),
     CALLDEF(git2r_merge_base, 2),
-    CALLDEF(git2r_merge_branch, 3),
+    CALLDEF(git2r_merge_branch, 4),
     CALLDEF(git2r_merge_fetch_heads, 2),
     CALLDEF(git2r_note_create, 7),
     CALLDEF(git2r_note_default_ref, 1),
@@ -142,13 +143,16 @@ static const R_CallMethodDef callMethods[] =
     CALLDEF(git2r_revwalk_list, 5),
     CALLDEF(git2r_signature_default, 1),
     CALLDEF(git2r_ssl_cert_locations, 2),
+    CALLDEF(git2r_stash_apply, 2),
     CALLDEF(git2r_stash_drop, 2),
     CALLDEF(git2r_stash_list, 1),
+    CALLDEF(git2r_stash_pop, 2),
     CALLDEF(git2r_stash_save, 6),
     CALLDEF(git2r_status_list, 6),
     CALLDEF(git2r_tag_create, 4),
     CALLDEF(git2r_tag_delete, 2),
     CALLDEF(git2r_tag_list, 1),
+    CALLDEF(git2r_tree_walk, 2),
     {NULL, NULL, 0}
 };
 

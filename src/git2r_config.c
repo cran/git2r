@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,8 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <Rdefines.h>
-#include "git2.h"
+#include <git2.h>
 
 #include "git2r_arg.h"
 #include "git2r_error.h"
@@ -36,19 +35,19 @@ static int git2r_config_count_variables(
     const git_config *cfg,
     size_t *n_level)
 {
-    int err;
+    int error;
     git_config_iterator *iterator = NULL;
 
-    err = git_config_iterator_new(&iterator, cfg);
-    if (err)
-        return err;
+    error = git_config_iterator_new(&iterator, cfg);
+    if (error)
+        return error;
 
     for (;;) {
         git_config_entry *entry;
-        err = git_config_next(&entry, iterator);
-        if (err) {
-            if (GIT_ITEROVER == err)
-                err = GIT_OK;
+        error = git_config_next(&entry, iterator);
+        if (error) {
+            if (GIT_ITEROVER == error)
+                error = GIT_OK;
             goto cleanup;
         }
 
@@ -77,16 +76,14 @@ static int git2r_config_count_variables(
         default:
             giterr_set_str(GITERR_CONFIG,
                            git2r_err_unexpected_config_level);
-            err = GIT_ERROR;
+            error = GIT_ERROR;
             goto cleanup;
         }
     }
 
 cleanup:
-    if (iterator)
-        git_config_iterator_free(iterator);
-
-    return err;
+    git_config_iterator_free(iterator);
+    return error;
 }
 
 /**
@@ -114,10 +111,10 @@ static size_t git2r_config_list_init(
         SET_VECTOR_ELT(
             list,
             i_list[level],
-            item = allocVector(VECSXP, n_level[level]));
-        setAttrib(item, R_NamesSymbol, allocVector(STRSXP, n_level[level]));
-        names = getAttrib(list, R_NamesSymbol);
-        SET_STRING_ELT(names, i_list[level] , mkChar(name));
+            item = Rf_allocVector(VECSXP, n_level[level]));
+        Rf_setAttrib(item, R_NamesSymbol, Rf_allocVector(STRSXP, n_level[level]));
+        names = Rf_getAttrib(list, R_NamesSymbol);
+        SET_STRING_ELT(names, i_list[level] , Rf_mkChar(name));
     }
 
     return i;
@@ -146,9 +143,9 @@ static void git2r_config_list_add_entry(
         SEXP sub_list = VECTOR_ELT(list, i_list[level]);
 
         if (i_level[level] < (size_t)LENGTH(sub_list)) {
-            SEXP names = getAttrib(sub_list, R_NamesSymbol);
-            SET_STRING_ELT(names, i_level[level], mkChar(entry->name));
-            SET_VECTOR_ELT(sub_list, i_level[level], mkString(entry->value));
+            SEXP names = Rf_getAttrib(sub_list, R_NamesSymbol);
+            SET_STRING_ELT(names, i_level[level], Rf_mkChar(entry->name));
+            SET_VECTOR_ELT(sub_list, i_level[level], Rf_mkString(entry->value));
             i_level[level]++;
             return;
         }
@@ -169,14 +166,14 @@ static int git2r_config_list_variables(
     SEXP list,
     size_t *n_level)
 {
-    int err;
+    int error;
     size_t i_level[GIT2R_N_CONFIG_LEVELS] = {0}; /* Current index at level */
     size_t i_list[GIT2R_N_CONFIG_LEVELS] = {0};  /* Index of level in target list */
     git_config_iterator *iterator = NULL;
     size_t i = 0;
 
-    err = git_config_iterator_new(&iterator, cfg);
-    if (err)
+    error = git_config_iterator_new(&iterator, cfg);
+    if (error)
         goto cleanup;
 
     i = git2r_config_list_init(list, 0, n_level, i_list, i, "programdata");
@@ -189,10 +186,10 @@ static int git2r_config_list_variables(
 
     for (;;) {
         git_config_entry *entry;
-        err = git_config_next(&entry, iterator);
-        if (err) {
-            if (GIT_ITEROVER == err)
-                err = GIT_OK;
+        error = git_config_next(&entry, iterator);
+        if (error) {
+            if (GIT_ITEROVER == error)
+                error = GIT_OK;
             goto cleanup;
         }
 
@@ -221,23 +218,21 @@ static int git2r_config_list_variables(
         default:
             giterr_set_str(GITERR_CONFIG,
                            git2r_err_unexpected_config_level);
-            err = GIT_ERROR;
+            error = GIT_ERROR;
             goto cleanup;
         }
     }
 
 cleanup:
-    if (iterator)
-        git_config_iterator_free(iterator);
-
-    return err;
+    git_config_iterator_free(iterator);
+    return error;
 }
 
 /**
  * Open configuration file
  *
  * @param out Pointer to store the loaded configuration.
- * @param repo S4 class git_repository. If non-R_NilValue open the
+ * @param repo S3 class git_repository. If non-R_NilValue open the
  * configuration file for the repository. If R_NilValue open the
  * global, XDG and system configuration files.
  * @param snapshot Open a snapshot of the configuration.
@@ -245,57 +240,57 @@ cleanup:
  */
 static int git2r_config_open(git_config **out, SEXP repo, int snapshot)
 {
-    int err;
+    int error;
 
-    if (!isNull(repo)) {
+    if (!Rf_isNull(repo)) {
         git_repository *repository = git2r_repository_open(repo);
         if (!repository)
             git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
         if (snapshot)
-            err = git_repository_config_snapshot(out, repository);
+            error = git_repository_config_snapshot(out, repository);
         else
-            err = git_repository_config(out, repository);
+            error = git_repository_config(out, repository);
 
         git_repository_free(repository);
     } else if (snapshot) {
         git_config *config = NULL;
 
-        err = git_config_open_default(&config);
-        if (err) {
+        error = git_config_open_default(&config);
+        if (error) {
             git_config_free(config);
-            return err;
+            return error;
         }
 
-        err = git_config_snapshot(out, config);
+        error = git_config_snapshot(out, config);
 
         git_config_free(config);
     } else {
-        err = git_config_open_default(out);
+        error = git_config_open_default(out);
     }
 
-    return err;
+    return error;
 }
 
 /**
  * Get config variables
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @return VECSXP list with variables by level
  */
 SEXP git2r_config_get(SEXP repo)
 {
-    int err;
+    int error, nprotect = 0;
     SEXP result = R_NilValue;
     size_t i = 0, n = 0, n_level[GIT2R_N_CONFIG_LEVELS] = {0};
     git_config *cfg = NULL;
 
-    err = git2r_config_open(&cfg, repo, 0);
-    if (err)
+    error = git2r_config_open(&cfg, repo, 0);
+    if (error)
         goto cleanup;
 
-    err = git2r_config_count_variables(cfg, n_level);
-    if (err)
+    error = git2r_config_count_variables(cfg, n_level);
+    if (error)
         goto cleanup;
 
     /* Count levels with entries */
@@ -304,20 +299,20 @@ SEXP git2r_config_get(SEXP repo)
             n++;
     }
 
-    PROTECT(result = allocVector(VECSXP, n));
-    setAttrib(result, R_NamesSymbol, allocVector(STRSXP, n));
+    PROTECT(result = Rf_allocVector(VECSXP, n));
+    nprotect++;
+    Rf_setAttrib(result, R_NamesSymbol, Rf_allocVector(STRSXP, n));
 
     if (git2r_config_list_variables(cfg, result, n_level))
         goto cleanup;
 
 cleanup:
-    if (cfg)
-        git_config_free(cfg);
+    git_config_free(cfg);
 
-    if (!isNull(result))
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
@@ -326,13 +321,13 @@ cleanup:
 /**
  * Set or delete config entries
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @param variables list of variables. If variable is NULL, it's deleted.
  * @return R_NilValue
  */
 SEXP git2r_config_set(SEXP repo, SEXP variables)
 {
-    int err = 0, nprotect = 0;
+    int error = 0, nprotect = 0;
     SEXP names;
     size_t i, n;
     git_config *cfg = NULL;
@@ -340,30 +335,30 @@ SEXP git2r_config_set(SEXP repo, SEXP variables)
     if (git2r_arg_check_list(variables))
         git2r_error(__func__, NULL, "'variables'", git2r_err_list_arg);
 
-    n = length(variables);
+    n = Rf_length(variables);
     if (n) {
-        err = git2r_config_open(&cfg, repo, 0);
-        if (err)
+        error = git2r_config_open(&cfg, repo, 0);
+        if (error)
             goto cleanup;
 
-        PROTECT(names = getAttrib(variables, R_NamesSymbol));
+        PROTECT(names = Rf_getAttrib(variables, R_NamesSymbol));
         nprotect++;
         for (i = 0; i < n; i++) {
             const char *key = CHAR(STRING_ELT(names, i));
             const char *value = NULL;
 
-            if (!isNull(VECTOR_ELT(variables, i)))
+            if (!Rf_isNull(VECTOR_ELT(variables, i)))
                 value = CHAR(STRING_ELT(VECTOR_ELT(variables, i), 0));
 
             if (value)
-                err = git_config_set_string(cfg, key, value);
+                error = git_config_set_string(cfg, key, value);
             else
-                err = git_config_delete_entry(cfg, key);
+                error = git_config_delete_entry(cfg, key);
 
-            if (err) {
-                if (err == GIT_EINVALIDSPEC) {
+            if (error) {
+                if (error == GIT_EINVALIDSPEC) {
                     Rf_warning("Variable was not in a valid format: '%s'", key);
-                    err = 0;
+                    error = 0;
                 } else {
                     goto cleanup;
                 }
@@ -373,13 +368,12 @@ SEXP git2r_config_set(SEXP repo, SEXP variables)
     }
 
 cleanup:
-    if (cfg)
-        git_config_free(cfg);
+    git_config_free(cfg);
 
     if (nprotect)
         UNPROTECT(nprotect);
 
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return R_NilValue;
@@ -388,14 +382,14 @@ cleanup:
 /**
  * Get the value of a string config variable
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @param name The name of the variable
  * @return If the variable exists, a character vector of length one
  * with the value, else R_NilValue.
  */
 SEXP git2r_config_get_string(SEXP repo, SEXP name)
 {
-    int err;
+    int error, nprotect = 0;
     SEXP result = R_NilValue;
     const char *value;
     git_config *cfg = NULL;
@@ -403,28 +397,28 @@ SEXP git2r_config_get_string(SEXP repo, SEXP name)
     if (git2r_arg_check_string(name))
         git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
 
-    err = git2r_config_open(&cfg, repo, 1);
-    if (err)
+    error = git2r_config_open(&cfg, repo, 1);
+    if (error)
         goto cleanup;
 
-    err = git_config_get_string(&value, cfg, CHAR(STRING_ELT(name, 0)));
-    if (err) {
-        if (err == GIT_ENOTFOUND)
-            err = 0;
+    error = git_config_get_string(&value, cfg, CHAR(STRING_ELT(name, 0)));
+    if (error) {
+        if (error == GIT_ENOTFOUND)
+            error = 0;
         goto cleanup;
     }
 
-    PROTECT(result = allocVector(STRSXP, 1));
-    SET_STRING_ELT(result, 0, mkChar(value));
+    PROTECT(result = Rf_allocVector(STRSXP, 1));
+    nprotect++;
+    SET_STRING_ELT(result, 0, Rf_mkChar(value));
 
 cleanup:
-    if (cfg)
-        git_config_free(cfg);
+    git_config_free(cfg);
 
-    if (!isNull(result))
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
@@ -433,14 +427,14 @@ cleanup:
 /**
  * Get the value of a boolean config variable
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @param name The name of the variable
  * @return If the variable exists, a logical vector of length one
  * with TRUE or FALSE, else R_NilValue.
  */
 SEXP git2r_config_get_logical(SEXP repo, SEXP name)
 {
-    int err;
+    int error, nprotect = 0;
     SEXP result = R_NilValue;
     int value;
     git_config *cfg = NULL;
@@ -448,32 +442,67 @@ SEXP git2r_config_get_logical(SEXP repo, SEXP name)
     if (git2r_arg_check_string(name))
         git2r_error(__func__, NULL, "'name'", git2r_err_string_arg);
 
-    err = git2r_config_open(&cfg, repo, 1);
-    if (err)
+    error = git2r_config_open(&cfg, repo, 1);
+    if (error)
         goto cleanup;
 
-    err = git_config_get_bool(&value, cfg, CHAR(STRING_ELT(name, 0)));
-    if (err) {
-        if (err == GIT_ENOTFOUND)
-            err = 0;
+    error = git_config_get_bool(&value, cfg, CHAR(STRING_ELT(name, 0)));
+    if (error) {
+        if (error == GIT_ENOTFOUND)
+            error = 0;
         goto cleanup;
     }
 
-    PROTECT(result = allocVector(LGLSXP, 1));
+    PROTECT(result = Rf_allocVector(LGLSXP, 1));
+    nprotect++;
     if (value)
         LOGICAL(result)[0] = 1;
     else
         LOGICAL(result)[0] = 0;
 
 cleanup:
-    if (cfg)
-        git_config_free(cfg);
+    git_config_free(cfg);
 
-    if (!isNull(result))
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
+
+    return result;
+}
+
+/**
+ * Locate the path to the configuration file
+ *
+ * @return path if a configuration file has been found, else NA.
+ */
+SEXP git2r_config_find_file(SEXP level)
+{
+    int not_found = 1;
+    SEXP result;
+    git_buf buf = GIT_BUF_INIT_CONST(NULL, 0);
+
+    if (git2r_arg_check_string(level))
+        git2r_error(__func__, NULL, "'level'", git2r_err_string_arg);
+
+    if (strcmp(CHAR(STRING_ELT(level, 0)), "global") == 0)
+        not_found = git_config_find_global(&buf);
+    else if (strcmp(CHAR(STRING_ELT(level, 0)), "programdata") == 0)
+        not_found = git_config_find_programdata(&buf);
+    else if (strcmp(CHAR(STRING_ELT(level, 0)), "system") == 0)
+        not_found = git_config_find_system(&buf);
+    else if (strcmp(CHAR(STRING_ELT(level, 0)), "xdg") == 0)
+        not_found = git_config_find_xdg(&buf);
+
+    PROTECT(result = Rf_allocVector(STRSXP, 1));
+    if (not_found)
+        SET_STRING_ELT(result, 0, NA_STRING);
+    else
+        SET_STRING_ELT(result, 0, Rf_mkChar(buf.ptr));
+
+    git_buf_free(&buf);
+    UNPROTECT(1);
 
     return result;
 }

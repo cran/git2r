@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -56,19 +56,19 @@ stopifnot(identical(merge_base(commit_2, commit_3), commit_1))
 
 ## Checkout master
 b <- branches(repo)
-checkout(b[sapply(b, slot, "name") == "master"][[1]], force=TRUE)
+checkout(b[sapply(b, "[", "name") == "master"][[1]], force=TRUE)
 
 ## Merge branch 1
-m_1 <- git2r:::merge_named_branch(repo, "branch1", TRUE, default_signature(repo))
-stopifnot(identical(m_1@fast_forward, TRUE))
-stopifnot(identical(m_1@conflicts, FALSE))
-stopifnot(identical(m_1@sha, character(0)))
+m_1 <- merge(repo, "branch1")
+stopifnot(identical(m_1$fast_forward, TRUE))
+stopifnot(identical(m_1$conflicts, FALSE))
+stopifnot(identical(sha(m_1), NA_character_))
 
 ## Merge branch 2
-m_2 <- git2r:::merge_named_branch(repo, "branch2", TRUE, default_signature(repo))
-stopifnot(identical(m_2@fast_forward, FALSE))
-stopifnot(identical(m_2@conflicts, FALSE))
-stopifnot(identical(m_2@sha, commits(repo)[[1]]@sha))
+m_2 <- merge(path, "branch2")
+stopifnot(identical(m_2$fast_forward, FALSE))
+stopifnot(identical(m_2$conflicts, FALSE))
+stopifnot(identical(sha(m_2), sha(commits(repo)[[1]])))
 
 ## Create third branch, checkout, change file and commit
 checkout(repo, "branch3", create=TRUE)
@@ -87,11 +87,11 @@ add(repo, "test.txt")
 commit(repo, "Some commit message branch 1")
 
 ## Merge branch 3
-m_3 <- git2r:::merge_named_branch(repo, "branch3", TRUE, default_signature(repo))
-stopifnot(identical(m_3@up_to_date, FALSE))
-stopifnot(identical(m_3@fast_forward, FALSE))
-stopifnot(identical(m_3@conflicts, TRUE))
-stopifnot(identical(m_3@sha, character(0)))
+m_3 <- merge(repo, "branch3")
+stopifnot(identical(m_3$up_to_date, FALSE))
+stopifnot(identical(m_3$fast_forward, FALSE))
+stopifnot(identical(m_3$conflicts, TRUE))
+stopifnot(identical(sha(m_3), NA_character_))
 
 ## Check status; Expect to have one unstaged unmerged conflict.
 stopifnot(identical(status(repo),

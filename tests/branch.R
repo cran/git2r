@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -38,14 +38,14 @@ commit.1 <- commit(repo, "Commit message")
 stopifnot(identical(length(branches(repo)), 1L))
 stopifnot(identical(is_head(branches(repo)[[1]]), TRUE))
 stopifnot(identical(is_local(branches(repo)[[1]]), TRUE))
-stopifnot(identical(branches(repo)[[1]]@name, "master"))
-stopifnot(identical(branches(repo)[[1]], head(repo)))
-stopifnot(identical(branches(repo)$master, head(repo)))
+stopifnot(identical(branches(repo)[[1]]$name, "master"))
+stopifnot(identical(branches(repo)[[1]], repository_head(repo)))
+stopifnot(identical(branches(repo)$master, repository_head(repo)))
 
 ## Create a branch
 b <- branch_create(commit.1, name = "test")
-stopifnot(identical(b@name, "test"))
-stopifnot(identical(b@type, 1L))
+stopifnot(identical(b$name, "test"))
+stopifnot(identical(b$type, 1L))
 stopifnot(identical(length(branches(repo)), 2L))
 stopifnot(identical(branch_target(branches(repo)[[1]]),
                     branch_target(branches(repo)[[2]])))
@@ -73,27 +73,27 @@ stopifnot(identical(branch_target(branches(repo)[[1]]),
 
 ## Test arguments
 res <- tools::assertError(.Call(git2r:::git2r_branch_delete, NULL))
-stopifnot(length(grep("'branch' must be a S4 class git_branch",
+stopifnot(length(grep("'branch' must be an S3 class git_branch",
                       res[[1]]$message)) > 0)
 res <- tools::assertError(.Call(git2r:::git2r_branch_delete, 3))
-stopifnot(length(grep("'branch' must be a S4 class git_branch",
+stopifnot(length(grep("'branch' must be an S3 class git_branch",
                       res[[1]]$message)) > 0)
 res <- tools::assertError(.Call(git2r:::git2r_branch_delete, repo))
-stopifnot(length(grep("'branch' must be a S4 class git_branch",
+stopifnot(length(grep("'branch' must be an S3 class git_branch",
                       res[[1]]$message)) > 0)
 b_tmp <- b
-b_tmp@name <- NA_character_
+b_tmp$name <- NA_character_
 res <- tools::assertError(.Call(git2r:::git2r_branch_delete, b_tmp))
-stopifnot(length(grep("'branch' must be a S4 class git_branch",
+stopifnot(length(grep("'branch' must be an S3 class git_branch",
                       res[[1]]$message)) > 0)
 b_tmp <- b
-b_tmp@type <- NA_integer_
+b_tmp$type <- NA_integer_
 res <- tools::assertError(.Call(git2r:::git2r_branch_delete, b_tmp))
-stopifnot(length(grep("'branch' must be a S4 class git_branch",
+stopifnot(length(grep("'branch' must be an S3 class git_branch",
                       res[[1]]$message)) > 0)
-b_tmp@type <- 3L
+b_tmp$type <- 3L
 res <- tools::assertError(.Call(git2r:::git2r_branch_delete, b_tmp))
-stopifnot(length(grep("'branch' must be a S4 class git_branch",
+stopifnot(length(grep("'branch' must be an S3 class git_branch",
                       res[[1]]$message)) > 0)
 
 ## Delete branch
@@ -113,7 +113,7 @@ b.3 <- branch_create(commit.3, name = "test-3")
 stopifnot(identical(length(branches(repo)), 4L))
 b.1 <- branch_rename(b.1, name = "test-1-new-name")
 stopifnot(identical(length(branches(repo)), 4L))
-stopifnot(identical(b.1@name, "test-1-new-name"))
+stopifnot(identical(b.1$name, "test-1-new-name"))
 tools::assertError(branch_rename(b.1, name = "test-2"))
 branch_rename(b.1, name = "test-2", force = TRUE)
 stopifnot(identical(length(branches(repo)), 3L))

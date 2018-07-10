@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -152,8 +152,8 @@ static void git2r_status_list_ignored(
 
     /* Create list with the correct number of entries */
     count = git2r_status_count_ignored(status_list);
-    SET_VECTOR_ELT(list, list_index, item = allocVector(VECSXP, count));
-    setAttrib(item, R_NamesSymbol, names = allocVector(STRSXP, count));
+    SET_VECTOR_ELT(list, list_index, item = Rf_allocVector(VECSXP, count));
+    Rf_setAttrib(item, R_NamesSymbol, names = Rf_allocVector(STRSXP, count));
 
     /* i index the entrycount. j index the added change in list */
     count = git_status_list_entrycount(status_list);
@@ -161,8 +161,8 @@ static void git2r_status_list_ignored(
         const git_status_entry *s = git_status_byindex(status_list, i);
 
         if (s->status == GIT_STATUS_IGNORED) {
-            SET_STRING_ELT(names, j, mkChar("ignored"));
-            SET_VECTOR_ELT(item, j, mkString(s->index_to_workdir->old_file.path));
+            SET_STRING_ELT(names, j, Rf_mkChar("ignored"));
+            SET_VECTOR_ELT(item, j, Rf_mkString(s->index_to_workdir->old_file.path));
             j++;
         }
     }
@@ -187,8 +187,8 @@ static void git2r_status_list_staged(
 
     /* Create list with the correct number of entries */
     n = git2r_status_count_staged(status_list);
-    SET_VECTOR_ELT(list, list_index, sub_list = allocVector(VECSXP, n));
-    setAttrib(sub_list, R_NamesSymbol, sub_list_names = allocVector(STRSXP, n));
+    SET_VECTOR_ELT(list, list_index, sub_list = Rf_allocVector(VECSXP, n));
+    Rf_setAttrib(sub_list, R_NamesSymbol, sub_list_names = Rf_allocVector(STRSXP, n));
 
     /* i index the entrycount. j index the added change in list */
     n = git_status_list_entrycount(status_list);
@@ -213,20 +213,20 @@ static void git2r_status_list_staged(
 
         if (!istatus)
             continue;
-        SET_STRING_ELT(sub_list_names, j, mkChar(istatus));
+        SET_STRING_ELT(sub_list_names, j, Rf_mkChar(istatus));
 
         old_path = s->head_to_index->old_file.path;
         new_path = s->head_to_index->new_file.path;
 
         if (old_path && new_path && strcmp(old_path, new_path)) {
             SEXP item;
-            SET_VECTOR_ELT(sub_list, j, item = allocVector(STRSXP, 2));
-            SET_STRING_ELT(item, 0, mkChar(old_path));
-            SET_STRING_ELT(item, 1, mkChar(new_path));
+            SET_VECTOR_ELT(sub_list, j, item = Rf_allocVector(STRSXP, 2));
+            SET_STRING_ELT(item, 0, Rf_mkChar(old_path));
+            SET_STRING_ELT(item, 1, Rf_mkChar(new_path));
         } else {
             SEXP item;
-            SET_VECTOR_ELT(sub_list, j, item = allocVector(STRSXP, 1));
-            SET_STRING_ELT(item, 0, mkChar(old_path ? old_path : new_path));
+            SET_VECTOR_ELT(sub_list, j, item = Rf_allocVector(STRSXP, 1));
+            SET_STRING_ELT(item, 0, Rf_mkChar(old_path ? old_path : new_path));
         }
 
         j++;
@@ -252,8 +252,8 @@ static void git2r_status_list_unstaged(
 
     /* Create list with the correct number of entries */
     n = git2r_status_count_unstaged(status_list);
-    SET_VECTOR_ELT(list, list_index, sub_list = allocVector(VECSXP, n));
-    setAttrib(sub_list, R_NamesSymbol, sub_list_names = allocVector(STRSXP, n));
+    SET_VECTOR_ELT(list, list_index, sub_list = Rf_allocVector(VECSXP, n));
+    Rf_setAttrib(sub_list, R_NamesSymbol, sub_list_names = Rf_allocVector(STRSXP, n));
 
     /* i index the entrycount. j index the added change in list */
     n = git_status_list_entrycount(status_list);
@@ -280,20 +280,20 @@ static void git2r_status_list_unstaged(
 
         if (!wstatus)
             continue;
-        SET_STRING_ELT(sub_list_names, j, mkChar(wstatus));
+        SET_STRING_ELT(sub_list_names, j, Rf_mkChar(wstatus));
 
         old_path = s->index_to_workdir->old_file.path;
         new_path = s->index_to_workdir->new_file.path;
 
         if (old_path && new_path && strcmp(old_path, new_path)) {
             SEXP item;
-            SET_VECTOR_ELT(sub_list, j, item = allocVector(STRSXP, 2));
-            SET_STRING_ELT(item, 0, mkChar(old_path));
-            SET_STRING_ELT(item, 1, mkChar(new_path));
+            SET_VECTOR_ELT(sub_list, j, item = Rf_allocVector(STRSXP, 2));
+            SET_STRING_ELT(item, 0, Rf_mkChar(old_path));
+            SET_STRING_ELT(item, 1, Rf_mkChar(new_path));
         } else {
             SEXP item;
-            SET_VECTOR_ELT(sub_list, j, item = allocVector(STRSXP, 1));
-            SET_STRING_ELT(item, 0, mkChar(old_path ? old_path : new_path));
+            SET_VECTOR_ELT(sub_list, j, item = Rf_allocVector(STRSXP, 1));
+            SET_STRING_ELT(item, 0, Rf_mkChar(old_path ? old_path : new_path));
         }
 
         j++;
@@ -319,8 +319,8 @@ static void git2r_status_list_untracked(
 
     /* Create list with the correct number of entries */
     n = git2r_status_count_untracked(status_list);
-    SET_VECTOR_ELT(list, list_index, sub_list = allocVector(VECSXP, n));
-    setAttrib(sub_list, R_NamesSymbol, sub_list_names = allocVector(STRSXP, n));
+    SET_VECTOR_ELT(list, list_index, sub_list = Rf_allocVector(VECSXP, n));
+    Rf_setAttrib(sub_list, R_NamesSymbol, sub_list_names = Rf_allocVector(STRSXP, n));
 
     /* i index the entrycount. j index the added change in list */
     n = git_status_list_entrycount(status_list);
@@ -331,8 +331,8 @@ static void git2r_status_list_untracked(
             SET_VECTOR_ELT(
                 sub_list,
                 j,
-                mkString(s->index_to_workdir->old_file.path));
-            SET_STRING_ELT(sub_list_names, j, mkChar("untracked"));
+                Rf_mkString(s->index_to_workdir->old_file.path));
+            SET_STRING_ELT(sub_list_names, j, Rf_mkChar("untracked"));
             j++;
         }
     }
@@ -341,7 +341,7 @@ static void git2r_status_list_untracked(
 /**
  * Get state of the repository working directory and the staging area.
  *
- * @param repo S4 class git_repository
+ * @param repo S3 class git_repository
  * @param staged Include staged files.
  * @param unstaged Include unstaged files.
  * @param untracked Include untracked files and directories.
@@ -358,7 +358,7 @@ SEXP git2r_status_list(
     SEXP all_untracked,
     SEXP ignored)
 {
-    int err;
+    int error, nprotect = 0;
     size_t i=0, count;
     SEXP list = R_NilValue;
     SEXP list_names = R_NilValue;
@@ -392,8 +392,8 @@ SEXP git2r_status_list(
     }
     if (LOGICAL(ignored)[0])
         opts.flags |= GIT_STATUS_OPT_INCLUDE_IGNORED;
-    err = git_status_list_new(&status_list, repository, &opts);
-    if (err)
+    error = git_status_list_new(&status_list, repository, &opts);
+    if (error)
         goto cleanup;
 
     count = LOGICAL(staged)[0] +
@@ -401,44 +401,42 @@ SEXP git2r_status_list(
         LOGICAL(untracked)[0] +
         LOGICAL(ignored)[0];
 
-    PROTECT(list = allocVector(VECSXP, count));
-    setAttrib(list, R_NamesSymbol, list_names = allocVector(STRSXP, count));
+    PROTECT(list = Rf_allocVector(VECSXP, count));
+    nprotect++;
+    Rf_setAttrib(list, R_NamesSymbol, list_names = Rf_allocVector(STRSXP, count));
 
     if (LOGICAL(staged)[0]) {
-        SET_STRING_ELT(list_names, i, mkChar("staged"));
+        SET_STRING_ELT(list_names, i, Rf_mkChar("staged"));
         git2r_status_list_staged(list, i, status_list);
         i++;
     }
 
     if (LOGICAL(unstaged)[0]) {
-        SET_STRING_ELT(list_names, i, mkChar("unstaged"));
+        SET_STRING_ELT(list_names, i, Rf_mkChar("unstaged"));
         git2r_status_list_unstaged(list, i, status_list);
         i++;
     }
 
     if (LOGICAL(untracked)[0]) {
-        SET_STRING_ELT(list_names, i, mkChar("untracked"));
+        SET_STRING_ELT(list_names, i, Rf_mkChar("untracked"));
         git2r_status_list_untracked(list, i, status_list);
         i++;
     }
 
     if (LOGICAL(ignored)[0]) {
-        SET_STRING_ELT(list_names, i, mkChar("ignored"));
+        SET_STRING_ELT(list_names, i, Rf_mkChar("ignored"));
         git2r_status_list_ignored(list, i, status_list);
     }
 
 
 cleanup:
-    if (status_list)
-        git_status_list_free(status_list);
+    git_status_list_free(status_list);
+    git_repository_free(repository);
 
-    if (repository)
-        git_repository_free(repository);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
-    if (!isNull(list))
-        UNPROTECT(1);
-
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return list;

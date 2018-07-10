@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -75,7 +75,7 @@ stopifnot(identical(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit,
 
 ## Checkout previous branch
 checkout(repo_2, "-")
-stopifnot(identical(head(repo_2)@name, "master"))
+stopifnot(identical(repository_head(repo_2)$name, "master"))
 
 ## Cleanup
 unlink(path_bare, recursive=TRUE)

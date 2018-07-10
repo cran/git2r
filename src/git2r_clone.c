@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,7 +16,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "git2.h"
+#include <git2.h>
 
 #include "git2r_arg.h"
 #include "git2r_clone.h"
@@ -85,7 +85,7 @@ SEXP git2r_clone(
     SEXP credentials,
     SEXP progress)
 {
-    int err;
+    int error;
     git_repository *repository = NULL;
     git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
     git_checkout_options checkout_opts = GIT_CHECKOUT_OPTIONS_INIT;
@@ -97,7 +97,7 @@ SEXP git2r_clone(
         git2r_error(__func__, NULL, "'local_path'", git2r_err_string_arg);
     if (git2r_arg_check_logical(bare))
         git2r_error(__func__, NULL, "'bare'", git2r_err_logical_arg);
-    if ((!isNull(branch)) && git2r_arg_check_string(branch))
+    if ((!Rf_isNull(branch)) && git2r_arg_check_string(branch))
         git2r_error(__func__, NULL, "'branch'", git2r_err_string_arg);
     if (git2r_arg_check_logical(checkout))
         git2r_error(__func__, NULL, "'checkout'", git2r_err_logical_arg);
@@ -119,7 +119,7 @@ SEXP git2r_clone(
     if (LOGICAL(bare)[0])
         clone_opts.bare = 1;
 
-    if (!isNull(branch))
+    if (!Rf_isNull(branch))
         clone_opts.checkout_branch = CHAR(STRING_ELT(branch, 0));
 
     if (LOGICAL(progress)[0]) {
@@ -127,15 +127,14 @@ SEXP git2r_clone(
         Rprintf("cloning into '%s'...\n", CHAR(STRING_ELT(local_path, 0)));
     }
 
-    err = git_clone(&repository,
+    error = git_clone(&repository,
                     CHAR(STRING_ELT(url, 0)),
                     CHAR(STRING_ELT(local_path, 0)),
                     &clone_opts);
 
-    if (repository)
-        git_repository_free(repository);
+    git_repository_free(repository);
 
-    if (err)
+    if (error)
         git2r_error(
             __func__,
             giterr_last(),

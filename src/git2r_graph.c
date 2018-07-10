@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2017 The git2r contributors
+ *  Copyright (C) 2013-2018 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -16,13 +16,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <Rdefines.h>
-#include "git2.h"
+#include <git2.h>
 
 #include "git2r_arg.h"
 #include "git2r_error.h"
 #include "git2r_oid.h"
 #include "git2r_repository.h"
+#include "git2r_S3.h"
 
 /**
  * Count the number of unique commits between two commit objects
@@ -35,11 +35,11 @@
 SEXP git2r_graph_ahead_behind(SEXP local, SEXP upstream)
 {
     size_t ahead, behind;
-    int err;
+    int error, nprotect = 0;
     SEXP result = R_NilValue;
-    SEXP slot;
-    git_oid local_oid;
-    git_oid upstream_oid;
+    SEXP local_repo, local_sha;
+    SEXP upstream_repo, upstream_sha;
+    git_oid local_oid, upstream_oid;
     git_repository *repository = NULL;
 
     if (git2r_arg_check_commit(local))
@@ -47,34 +47,38 @@ SEXP git2r_graph_ahead_behind(SEXP local, SEXP upstream)
     if (git2r_arg_check_commit(upstream))
         git2r_error(__func__, NULL, "'upstream'", git2r_err_commit_arg);
 
-    slot = GET_SLOT(local, Rf_install("repo"));
-    repository = git2r_repository_open(slot);
+    local_repo = git2r_get_list_element(local, "repo");
+    upstream_repo = git2r_get_list_element(upstream, "repo");
+    if (git2r_arg_check_same_repo(local_repo, upstream_repo))
+        git2r_error(__func__, NULL, "'local' and 'upstream' not from same repository", NULL);
+
+    repository = git2r_repository_open(local_repo);
     if (!repository)
         git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    slot = GET_SLOT(local, Rf_install("sha"));
-    git2r_oid_from_sha_sexp(slot, &local_oid);
+    local_sha = git2r_get_list_element(local, "sha");
+    git2r_oid_from_sha_sexp(local_sha, &local_oid);
 
-    slot = GET_SLOT(upstream, Rf_install("sha"));
-    git2r_oid_from_sha_sexp(slot, &upstream_oid);
+    upstream_sha = git2r_get_list_element(upstream, "sha");
+    git2r_oid_from_sha_sexp(upstream_sha, &upstream_oid);
 
-    err = git_graph_ahead_behind(&ahead, &behind, repository, &local_oid,
+    error = git_graph_ahead_behind(&ahead, &behind, repository, &local_oid,
                                  &upstream_oid);
-    if (err)
+    if (error)
         goto cleanup;
 
-    PROTECT(result = allocVector(INTSXP, 2));
+    PROTECT(result = Rf_allocVector(INTSXP, 2));
+    nprotect++;
     INTEGER(result)[0] = ahead;
     INTEGER(result)[1] = behind;
 
 cleanup:
-    if (repository)
-        git_repository_free(repository);
+    git_repository_free(repository);
 
-    if (!isNull(result))
-        UNPROTECT(1);
+    if (nprotect)
+        UNPROTECT(nprotect);
 
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
     return result;
@@ -89,11 +93,10 @@ cleanup:
  */
 SEXP git2r_graph_descendant_of(SEXP commit, SEXP ancestor)
 {
-    int err;
-    SEXP slot;
-    SEXP result = R_NilValue;
-    git_oid commit_oid;
-    git_oid ancestor_oid;
+    int error, descendant_of = 0;
+    SEXP commit_repo, commit_sha;
+    SEXP ancestor_repo, ancestor_sha;
+    git_oid commit_oid, ancestor_oid;
     git_repository *repository = NULL;
 
     if (git2r_arg_check_commit(commit))
@@ -101,34 +104,32 @@ SEXP git2r_graph_descendant_of(SEXP commit, SEXP ancestor)
     if (git2r_arg_check_commit(ancestor))
         git2r_error(__func__, NULL, "'ancestor'", git2r_err_commit_arg);
 
-    slot = GET_SLOT(commit, Rf_install("repo"));
-    repository = git2r_repository_open(slot);
+    commit_repo = git2r_get_list_element(commit, "repo");
+    ancestor_repo = git2r_get_list_element(ancestor, "repo");
+    if (git2r_arg_check_same_repo(commit_repo, ancestor_repo))
+        git2r_error(__func__, NULL, "'commit' and 'ancestor' not from same repository", NULL);
+
+    repository = git2r_repository_open(commit_repo);
     if (!repository)
         git2r_error(__func__, NULL, git2r_err_invalid_repository, NULL);
 
-    slot = GET_SLOT(commit, Rf_install("sha"));
-    git2r_oid_from_sha_sexp(slot, &commit_oid);
+    commit_sha = git2r_get_list_element(commit, "sha");
+    git2r_oid_from_sha_sexp(commit_sha, &commit_oid);
 
-    slot = GET_SLOT(ancestor, Rf_install("sha"));
-    git2r_oid_from_sha_sexp(slot, &ancestor_oid);
+    ancestor_sha = git2r_get_list_element(ancestor, "sha");
+    git2r_oid_from_sha_sexp(ancestor_sha, &ancestor_oid);
 
-    err = git_graph_descendant_of(repository, &commit_oid, &ancestor_oid);
-    if (0 > err || 1 < err)
+    error = git_graph_descendant_of(repository, &commit_oid, &ancestor_oid);
+    if (0 > error || 1 < error)
         goto cleanup;
-
-    PROTECT(result = allocVector(LGLSXP, 1));
-    LOGICAL(result)[0] = err;
-    err = GIT_OK;
+    descendant_of = error;
+    error = 0;
 
 cleanup:
-    if (repository)
-        git_repository_free(repository);
+    git_repository_free(repository);
 
-    if (!isNull(result))
-        UNPROTECT(1);
-
-    if (err)
+    if (error)
         git2r_error(__func__, giterr_last(), NULL, NULL);
 
-    return result;
+    return Rf_ScalarLogical(descendant_of);
 }

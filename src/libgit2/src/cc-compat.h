@@ -4,8 +4,8 @@
  * This file is part of libgit2, distributed under the GNU GPL v2 with
  * a Linking Exception. For full terms see the included COPYING file.
  */
-#ifndef INCLUDE_compat_h__
-#define INCLUDE_compat_h__
+#ifndef INCLUDE_cc_compat_h__
+#define INCLUDE_cc_compat_h__
 
 #include <stdarg.h>
 
@@ -46,7 +46,7 @@
 #define GIT_UNUSED(x) ((void)(x))
 
 /* Define the printf format specifer to use for size_t output */
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #	define PRIuZ "Iu"
 #	define PRIxZ "Ix"
 #	define PRIdZ "Id"
@@ -84,4 +84,4 @@
 #	endif
 #endif
 
-#endif /* INCLUDE_compat_h__ */
+#endif

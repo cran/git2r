@@ -171,6 +171,12 @@ typedef enum {
 	 * Options controlling how output will be generated
 	 */
 
+	/** Use a heuristic that takes indentation and whitespace into account
+	 * which generally can produce better diffs when dealing with ambiguous
+	 * diff hunks.
+	 */
+	GIT_DIFF_INDENT_HEURISTIC = (1u << 18),
+
 	/** Treat all files as text, disabling binary attributes & detection */
 	GIT_DIFF_FORCE_TEXT = (1u << 20),
 	/** Treat all files as binary, disabling text diffs */
@@ -200,12 +206,12 @@ typedef enum {
 	/** Use the "patience diff" algorithm */
 	GIT_DIFF_PATIENCE = (1u << 28),
 	/** Take extra time to find minimal diff */
-	GIT_DIFF_MINIMAL = (1 << 29),
+	GIT_DIFF_MINIMAL = (1u << 29),
 
 	/** Include the necessary deflate / delta information so that `git-apply`
 	 *  can apply given diff information to binary files.
 	 */
-	GIT_DIFF_SHOW_BINARY = (1 << 30),
+	GIT_DIFF_SHOW_BINARY = (1u << 30),
 } git_diff_option_t;
 
 /**
@@ -431,11 +437,13 @@ typedef struct {
 	{GIT_DIFF_OPTIONS_VERSION, 0, GIT_SUBMODULE_IGNORE_UNSPECIFIED, {NULL,0}, NULL, NULL, NULL, 3}
 
 /**
- * Initializes a `git_diff_options` with default values. Equivalent to
- * creating an instance with GIT_DIFF_OPTIONS_INIT.
+ * Initialize git_diff_options structure
  *
- * @param opts The `git_diff_options` struct to initialize
- * @param version Version of struct; pass `GIT_DIFF_OPTIONS_VERSION`
+ * Initializes a `git_diff_options` with default values. Equivalent to creating
+ * an instance with GIT_DIFF_OPTIONS_INIT.
+ *
+ * @param opts The `git_diff_options` struct to initialize.
+ * @param version The struct version; pass `GIT_DIFF_OPTIONS_VERSION`.
  * @return Zero on success; -1 on failure.
  */
 GIT_EXTERN(int) git_diff_init_options(
@@ -515,12 +523,12 @@ typedef int(*git_diff_binary_cb)(
  * Structure describing a hunk of a diff.
  */
 typedef struct {
-	int    old_start;     /** Starting line number in old_file */
-	int    old_lines;     /** Number of lines in old_file */
-	int    new_start;     /** Starting line number in new_file */
-	int    new_lines;     /** Number of lines in new_file */
-	size_t header_len;    /** Number of bytes in header text */
-	char   header[GIT_DIFF_HUNK_HEADER_SIZE];   /** Header text, NUL-byte terminated */
+	int    old_start;     /**< Starting line number in old_file */
+	int    old_lines;     /**< Number of lines in old_file */
+	int    new_start;     /**< Starting line number in new_file */
+	int    new_lines;     /**< Number of lines in new_file */
+	size_t header_len;    /**< Number of bytes in header text */
+	char   header[GIT_DIFF_HUNK_HEADER_SIZE];   /**< Header text, NUL-byte terminated */
 } git_diff_hunk;
 
 /**
@@ -726,11 +734,13 @@ typedef struct {
 #define GIT_DIFF_FIND_OPTIONS_INIT {GIT_DIFF_FIND_OPTIONS_VERSION}
 
 /**
- * Initializes a `git_diff_find_options` with default values. Equivalent to
- * creating an instance with GIT_DIFF_FIND_OPTIONS_INIT.
+ * Initialize git_diff_find_options structure
  *
- * @param opts The `git_diff_find_options` struct to initialize
- * @param version Version of struct; pass `GIT_DIFF_FIND_OPTIONS_VERSION`
+ * Initializes a `git_diff_find_options` with default values. Equivalent to creating
+ * an instance with GIT_DIFF_FIND_OPTIONS_INIT.
+ *
+ * @param opts The `git_diff_find_options` struct to initialize.
+ * @param version The struct version; pass `GIT_DIFF_FIND_OPTIONS_VERSION`.
  * @return Zero on success; -1 on failure.
  */
 GIT_EXTERN(int) git_diff_find_init_options(
@@ -1388,17 +1398,68 @@ GIT_EXTERN(int) git_diff_commit_as_email(
 	const git_diff_options *diff_opts);
 
 /**
- * Initializes a `git_diff_format_email_options` with default values.
+ * Initialize git_diff_format_email_options structure
  *
- * Equivalent to creating an instance with GIT_DIFF_FORMAT_EMAIL_OPTIONS_INIT.
+ * Initializes a `git_diff_format_email_options` with default values. Equivalent
+ * to creating an instance with GIT_DIFF_FORMAT_EMAIL_OPTIONS_INIT.
  *
- * @param opts The `git_diff_format_email_options` struct to initialize
- * @param version Version of struct; pass `GIT_DIFF_FORMAT_EMAIL_OPTIONS_VERSION`
+ * @param opts The `git_blame_options` struct to initialize.
+ * @param version The struct version; pass `GIT_DIFF_FORMAT_EMAIL_OPTIONS_VERSION`.
  * @return Zero on success; -1 on failure.
  */
 GIT_EXTERN(int) git_diff_format_email_init_options(
 	git_diff_format_email_options *opts,
 	unsigned int version);
+
+/**
+ * Patch ID options structure
+ *
+ * Initialize with `GIT_PATCHID_OPTIONS_INIT`. Alternatively, you can
+ * use `git_patchid_init_options`.
+ *
+ */
+typedef struct git_diff_patchid_options {
+	unsigned int version;
+} git_diff_patchid_options;
+
+#define GIT_DIFF_PATCHID_OPTIONS_VERSION 1
+#define GIT_DIFF_PATCHID_OPTIONS_INIT { GIT_DIFF_PATCHID_OPTIONS_VERSION }
+
+/**
+ * Initialize git_diff_patchid_options structure
+ *
+ * Initializes a `git_diff_patchid_options` with default values. Equivalent to
+ * creating an instance with `GIT_DIFF_PATCHID_OPTIONS_INIT`.
+ *
+ * @param opts The `git_diff_patchid_options` struct to initialize.
+ * @param version The struct version; pass `GIT_DIFF_PATCHID_OPTIONS_VERSION`.
+ * @return Zero on success; -1 on failure.
+ */
+GIT_EXTERN(int) git_diff_patchid_init_options(
+	git_diff_patchid_options *opts,
+	unsigned int version);
+
+/**
+ * Calculate the patch ID for the given patch.
+ *
+ * Calculate a stable patch ID for the given patch by summing the
+ * hash of the file diffs, ignoring whitespace and line numbers.
+ * This can be used to derive whether two diffs are the same with
+ * a high probability.
+ *
+ * Currently, this function only calculates stable patch IDs, as
+ * defined in git-patch-id(1), and should in fact generate the
+ * same IDs as the upstream git project does.
+ *
+ * @param out Pointer where the calculated patch ID shoul be
+ *  stored
+ * @param diff The diff to calculate the ID for
+ * @param opts Options for how to calculate the patch ID. This is
+ *  intended for future changes, as currently no options are
+ *  available.
+ * @return 0 on success, an error code otherwise.
+ */
+GIT_EXTERN(int) git_diff_patchid(git_oid *out, git_diff *diff, git_diff_patchid_options *opts);
 
 GIT_END_DECL
 

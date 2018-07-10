@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -41,12 +41,12 @@ add(repo, "test.txt")
 commit_1 <- commit(repo, "Commit message")
 
 ## Check commit
-stopifnot(identical(commit_1@author@name, "Alice"))
-stopifnot(identical(commit_1@author@email, "alice@example.org"))
-stopifnot(identical(lookup(repo, commit_1@sha), commit_1))
+stopifnot(identical(commit_1$author$name, "Alice"))
+stopifnot(identical(commit_1$author$email, "alice@example.org"))
+stopifnot(identical(lookup(repo, sha(commit_1)), commit_1))
 stopifnot(identical(length(commits(repo)), 1L))
-stopifnot(identical(commits(repo)[[1]]@author@name, "Alice"))
-stopifnot(identical(commits(repo)[[1]]@author@email, "alice@example.org"))
+stopifnot(identical(commits(repo)[[1]]$author$name, "Alice"))
+stopifnot(identical(commits(repo)[[1]]$author$email, "alice@example.org"))
 stopifnot(identical(parents(commit_1), list()))
 
 ## Check is_commit
@@ -135,13 +135,14 @@ tools::assertError(commits(repo, n = 2.2))
 tools::assertError(commits(repo, n = "2"))
 
 ## Check to coerce repository to data.frame
-df <- as(repo, "data.frame")
+df <- as.data.frame(repo)
 stopifnot(identical(dim(df), c(8L, 6L)))
 stopifnot(identical(names(df), c("sha", "summary", "message",
                                  "author", "email", "when")))
 
 ## Set working directory to path and check commits
 setwd(path)
+stopifnot(identical(sha(last_commit()), sha(commits(repo, n = 1)[[1]])))
 stopifnot(identical(length(commits()), 8L))
 stopifnot(identical(length(commits(n = -1)), 8L))
 stopifnot(identical(length(commits(n = 2)), 2L))
@@ -166,17 +167,17 @@ unlink(punch_card_plot_file)
 
 ## Check that 'git2r_arg_check_commit' raise error
 res <- tools::assertError(.Call(git2r:::git2r_commit_tree, NULL))
-stopifnot(length(grep("'commit' must be a S4 class git_commit",
+stopifnot(length(grep("'commit' must be an S3 class git_commit",
                       res[[1]]$message)) > 0)
 res <- tools::assertError(.Call(git2r:::git2r_commit_tree, 3))
-stopifnot(length(grep("'commit' must be a S4 class git_commit",
+stopifnot(length(grep("'commit' must be an S3 class git_commit",
                       res[[1]]$message)) > 0)
 res <- tools::assertError(.Call(git2r:::git2r_commit_tree, repo))
-stopifnot(length(grep("'commit' must be a S4 class git_commit",
+stopifnot(length(grep("'commit' must be an S3 class git_commit",
                       res[[1]]$message)) > 0)
-commit_1@sha <- NA_character_
+commit_1$sha <- NA_character_
 res <- tools::assertError(.Call(git2r:::git2r_commit_tree, commit_1))
-stopifnot(length(grep("'commit' must be a S4 class git_commit",
+stopifnot(length(grep("'commit' must be an S3 class git_commit",
                       res[[1]]$message)) > 0)
 
 ## Cleanup
