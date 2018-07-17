@@ -1,6 +1,6 @@
-e1e48346d99837ee98029d93756391c9 *DESCRIPTION
+61c695494b5399f051fd620fd8511ba1 *DESCRIPTION
 a704a2a0f7d03bb5bff77c1db6c2e15d *NAMESPACE
-01fbe5021a455e5b087bfc1a87625a8d *NEWS
+08f3a8b0bfbb130708bf96ee3cecbb0a *NEWS
 a051a3d150f55584c825790476494169 *R/blame.R
 fb4e61c42693b6a80997fdff20e968fd *R/blob.R
 39a67496623b5e3fb1617cf66673e5a1 *R/branch.R
@@ -38,8 +38,8 @@ ada1727a90eca1ea80c0bd48148fd5d8 *R/time.R
 7f8c3a3a9206b9d419f05f06bab10a8d *R/tree.R
 3d9e04941b4da3dbe3004091a455ac15 *R/when.R
 de70826e35ee5fafdfaf08dafbf9f162 *cleanup
-1f50f1292a24d2b6fc4a961e7b93451c *configure
-adf305db521779957ce654d5a893a3c7 *configure.ac
+c3de80359d0ce9d3eee6de6d03a3c0ce *configure
+1d2100413f0c787e73cd0bc5b8efb5c1 *configure.ac
 4ddf2ad84203347f690b3ec0527d3c9a *inst/AUTHORS
 a570c78338c55f6460bebfc37da47a7b *inst/CITATION
 ad7ba52b680bdbdd9c9f41bd34686586 *inst/COPYING
@@ -156,7 +156,7 @@ b1324d535d9b02fa0f52ce7d090bfbdf *man/when.Rd
 ba3a1a4f454f3d9d5fc01c5a3b568c85 *man/workdir.Rd
 fbd21714f2fcdb394e2958c148349fee *src/Makevars.in
 db47ef15e60223671b5019130711cf33 *src/Makevars.win
-4777f7482d84aad54a702680e93ae20c *src/Makevars_libgit2.in
+c23f6e6767272113f9835d80ec6d552c *src/Makevars_libgit2.in
 05973c7e71cd5cd391388d14e9ef186e *src/git2r.c
 ed1bd976ff5d2f7f62af7de0fe68708b *src/git2r_S3.c
 88efbdf75df30d20edd9632febb9c700 *src/git2r_S3.h
@@ -176,7 +176,7 @@ e8ec99f08072f81badef2914eb5769d4 *src/git2r_commit.c
 1a61abdcd5d7558ce07148454a9fe096 *src/git2r_commit.h
 49a15286568d2b06cbfd72466bf6f0d5 *src/git2r_config.c
 2a5cd9432062a0893957344f471503b5 *src/git2r_config.h
-e845a290320c23b7910f090644f5142d *src/git2r_cred.c
+63fda913e3f0996d9d82d02646d21c1a *src/git2r_cred.c
 d8f0e1ab20252b13d0c819e38eb59d01 *src/git2r_cred.h
 65eaa0105a35ef46886d29a0e1a7564c *src/git2r_diff.c
 b0d094213b75c83f7259e34db239cfdd *src/git2r_diff.h
@@ -311,7 +311,7 @@ d9e33aae83238f7b44232c3873933946 *src/libgit2/include/git2/transaction.h
 3c369b0194184eb876b9f21321d372b8 *src/libgit2/include/git2/transport.h
 ca6b91994b6812192cad69ffbcb0ce77 *src/libgit2/include/git2/tree.h
 68f92de7a9faa5ae9300deb0375a1417 *src/libgit2/include/git2/types.h
-27f6660620d4e1b8c39211c2d1d3bf80 *src/libgit2/include/git2/version.h
+fdefe31bb8e171227de8a6e0fb22cfbf *src/libgit2/include/git2/version.h
 9919449e5033d822c1c9bcf715ea8d9a *src/libgit2/include/git2/worktree.h
 9faeda2370accdde328afa321db972d6 *src/libgit2/src/annotated_commit.c
 a28b1d43148529cda316e68eede35642 *src/libgit2/src/annotated_commit.h
@@ -359,7 +359,7 @@ c680f3147d47efe4c074ec7263c4452a *src/libgit2/src/config_file.h
 3f8a809f2c6acb2e2e90738caf8d27f9 *src/libgit2/src/config_parse.h
 5108830b3131fe7c174844acf6daf855 *src/libgit2/src/crlf.c
 37a1f5b63396adf481ad147f423b9f11 *src/libgit2/src/date.c
-95dc5d6d287f560fb5d5968e6efe82b4 *src/libgit2/src/delta.c
+42dd0064cd9225971e6e609b9c44e9b9 *src/libgit2/src/delta.c
 556d99a82704627f1dec80bbbabba87d *src/libgit2/src/delta.h
 8482c93dae2d6e036080b5f4960fabd4 *src/libgit2/src/describe.c
 4fd4ef2523e7670b2a926152ee936484 *src/libgit2/src/diff.c
@@ -396,7 +396,12 @@ d0ff89d7fb6aaf710b8faa728192ff59 *src/libgit2/src/global.h
 848607e2ba25937091627556374fcd98 *src/libgit2/src/graph.c
 016c94c6e627b6c7a2156f3a68d5eb90 *src/libgit2/src/hash.c
 f2d0df05ca4681f207ba059a145abaaa *src/libgit2/src/hash.h
+b7b563e3e441a2ab031ab2ae9c7e0d90 *src/libgit2/src/hash/hash_collisiondetect.h
 f057c15ed35303db074fd9b9226a90aa *src/libgit2/src/hash/hash_openssl.h
+5650a04affb71c15d1f5699164aa3286 *src/libgit2/src/hash/sha1dc/sha1.c
+21c70909bcd057283a6a2b023256dafc *src/libgit2/src/hash/sha1dc/sha1.h
+14bd8908eb52a8a4a426faf9c538d077 *src/libgit2/src/hash/sha1dc/ubc_check.c
+6633a9728e2b0278c0a60eb3f77651a3 *src/libgit2/src/hash/sha1dc/ubc_check.h
 b5cc6845c06f2ae01a193b8147807624 *src/libgit2/src/hashsig.c
 042c55997d31eb563f891e93703da374 *src/libgit2/src/ident.c
 7d5d46b4e3226f071522a29c3bdc0ad6 *src/libgit2/src/idxmap.c
@@ -474,7 +479,7 @@ ad0eb1ca8076a320b47c48e9c0d84d4f *src/libgit2/src/refdb_fs.c
 2d3d102cc4b6ecf0dddaf5ff00e1be01 *src/libgit2/src/refdb_fs.h
 bfbbabfcd04de15f2926442e41c0888e *src/libgit2/src/reflog.c
 b87cfc1afaae103e87d40b559667053a *src/libgit2/src/reflog.h
-8d73fcd534db9107cee80f325be5b775 *src/libgit2/src/refs.c
+27817e332ec38a2b3f4a13bdeed01cf7 *src/libgit2/src/refs.c
 fe0db8383e78a71b86cda32bf251f14b *src/libgit2/src/refs.h
 f6bf01f5b3dd53677177e2bd65fafefd *src/libgit2/src/refspec.c
 8abc5eaabe356823b31e8293d8cf14c3 *src/libgit2/src/refspec.h
@@ -553,7 +558,7 @@ b75df82159343c5f1c164a8ffe318bd3 *src/libgit2/src/tree-cache.c
 44f34c426ed81b69c31e31a37433eab7 *src/libgit2/src/unix/pthread.h
 3c5b85aeb3bb2d2483bc4911e688b47c *src/libgit2/src/unix/realpath.c
 eacd3240b2835977a4b9c7985fb8f654 *src/libgit2/src/userdiff.h
-36f847c7ed2fd49cd4c07792105257e3 *src/libgit2/src/util.c
+84a89a84b03406d0799aa52b37d162a2 *src/libgit2/src/util.c
 179793f53a2f0ee983f24799dfa13679 *src/libgit2/src/util.h
 6cff1530561052a5d4fdadf522b6b251 *src/libgit2/src/varint.c
 dc74d714a3595cc232434f62a3693477 *src/libgit2/src/varint.h
