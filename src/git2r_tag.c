@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2018 The git2r contributors
+ *  Copyright (C) 2013-2019 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -211,7 +211,7 @@ static int git2r_tag_foreach_cb(const char *name, git_oid *oid, void *payload)
     /* Check if we have a list to populate */
     if (!Rf_isNull(cb_data->tags)) {
         int skip = 0;
-        SEXP item, tag;
+        SEXP item = R_NilValue, tag;
 
         error = git_object_lookup(&object, cb_data->repository, oid, GIT_OBJ_ANY);
         if (error)
@@ -219,44 +219,42 @@ static int git2r_tag_foreach_cb(const char *name, git_oid *oid, void *payload)
 
         switch (git_object_type(object)) {
         case GIT_OBJ_COMMIT:
-            SET_VECTOR_ELT(
-                cb_data->tags,
-                cb_data->n,
-                item = Rf_mkNamed(VECSXP, git2r_S3_items__git_commit));
-            Rf_setAttrib(item, R_ClassSymbol,
-                         Rf_mkString(git2r_S3_class__git_commit));
+            PROTECT(item = Rf_mkNamed(VECSXP, git2r_S3_items__git_commit));
+            Rf_setAttrib(
+                item,
+                R_ClassSymbol,
+                Rf_mkString(git2r_S3_class__git_commit));
             git2r_commit_init((git_commit*)object, cb_data->repo, item);
             break;
         case GIT_OBJ_TREE:
-            SET_VECTOR_ELT(
-                cb_data->tags,
-                cb_data->n,
-                item = Rf_mkNamed(VECSXP, git2r_S3_items__git_tree));
-            Rf_setAttrib(item, R_ClassSymbol,
-                         Rf_mkString(git2r_S3_class__git_tree));
+            PROTECT(item = Rf_mkNamed(VECSXP, git2r_S3_items__git_tree));
+            Rf_setAttrib(
+                item,
+                R_ClassSymbol,
+                Rf_mkString(git2r_S3_class__git_tree));
             git2r_tree_init((git_tree*)object, cb_data->repo, item);
             break;
         case GIT_OBJ_BLOB:
-            SET_VECTOR_ELT(
-                cb_data->tags,
-                cb_data->n,
-                item = Rf_mkNamed(VECSXP, git2r_S3_items__git_blob));
-            Rf_setAttrib(item, R_ClassSymbol,
-                         Rf_mkString(git2r_S3_class__git_blob));
+            PROTECT(item = Rf_mkNamed(VECSXP, git2r_S3_items__git_blob));
+            Rf_setAttrib(
+                item,
+                R_ClassSymbol,
+                Rf_mkString(git2r_S3_class__git_blob));
             git2r_blob_init((git_blob*)object, cb_data->repo, item);
             break;
         case GIT_OBJ_TAG:
-            SET_VECTOR_ELT(
-                cb_data->tags,
-                cb_data->n,
-                item = Rf_mkNamed(VECSXP, git2r_S3_items__git_tag));
-            Rf_setAttrib(item, R_ClassSymbol,
-                         Rf_mkString(git2r_S3_class__git_tag));
+            PROTECT(item = Rf_mkNamed(VECSXP, git2r_S3_items__git_tag));
+            Rf_setAttrib(
+                item,
+                R_ClassSymbol,
+                Rf_mkString(git2r_S3_class__git_tag));
             git2r_tag_init((git_tag*)object, cb_data->repo, item);
             break;
         default:
             git2r_error(__func__, NULL, git2r_err_object_type, NULL);
         }
+
+        SET_VECTOR_ELT(cb_data->tags, cb_data->n, item);
 
         if (strncmp(name, "refs/tags/", sizeof("refs/tags/") - 1) == 0)
             skip = strlen("refs/tags/");
@@ -265,7 +263,8 @@ static int git2r_tag_foreach_cb(const char *name, git_oid *oid, void *payload)
             Rf_getAttrib(cb_data->tags, R_NamesSymbol),
             cb_data->n,
             tag);
-        UNPROTECT(1);
+
+        UNPROTECT(2);
 
         if (object)
             git_object_free(object);

@@ -1,8 +1,8 @@
-61c695494b5399f051fd620fd8511ba1 *DESCRIPTION
+ad466d5f637bcf95612a850fd0978866 *DESCRIPTION
 a704a2a0f7d03bb5bff77c1db6c2e15d *NAMESPACE
-08f3a8b0bfbb130708bf96ee3cecbb0a *NEWS
+aa4f7468803e39213154211c6321c650 *NEWS
 a051a3d150f55584c825790476494169 *R/blame.R
-fb4e61c42693b6a80997fdff20e968fd *R/blob.R
+dfa8d63f9a276ace18ae2f2451b063db *R/blob.R
 39a67496623b5e3fb1617cf66673e5a1 *R/branch.R
 03f7498c16073260234740b738019418 *R/bundle_r_package.R
 6bee11dbbd47e65085a661ffa9dabac5 *R/checkout.R
@@ -38,8 +38,8 @@ ada1727a90eca1ea80c0bd48148fd5d8 *R/time.R
 7f8c3a3a9206b9d419f05f06bab10a8d *R/tree.R
 3d9e04941b4da3dbe3004091a455ac15 *R/when.R
 de70826e35ee5fafdfaf08dafbf9f162 *cleanup
-c3de80359d0ce9d3eee6de6d03a3c0ce *configure
-1d2100413f0c787e73cd0bc5b8efb5c1 *configure.ac
+3ec6075f03618b84705077e84bcc799b *configure
+7d93800d1aded8951774115e465b07d1 *configure.ac
 4ddf2ad84203347f690b3ec0527d3c9a *inst/AUTHORS
 a570c78338c55f6460bebfc37da47a7b *inst/CITATION
 ad7ba52b680bdbdd9c9f41bd34686586 *inst/COPYING
@@ -178,7 +178,7 @@ e8ec99f08072f81badef2914eb5769d4 *src/git2r_commit.c
 2a5cd9432062a0893957344f471503b5 *src/git2r_config.h
 63fda913e3f0996d9d82d02646d21c1a *src/git2r_cred.c
 d8f0e1ab20252b13d0c819e38eb59d01 *src/git2r_cred.h
-65eaa0105a35ef46886d29a0e1a7564c *src/git2r_diff.c
+b3fe21b5dad564ff712845547f0ef62e *src/git2r_diff.c
 b0d094213b75c83f7259e34db239cfdd *src/git2r_diff.h
 3e04a3282286bff5a5f8ac3bc8067184 *src/git2r_error.c
 b2d94c84cf719b7092f5a8f7773fabfb *src/git2r_error.h
@@ -190,7 +190,7 @@ e663319d5ae049a7521c69960b991a97 *src/git2r_libgit2.c
 5dc19c8872d38e8136b240417fec0a88 *src/git2r_libgit2.h
 ef60261f8046b1933f8091bf74580324 *src/git2r_merge.c
 e9fabfe4d16bcc226f6a47f2b492ad95 *src/git2r_merge.h
-4d54a85bedff5049ddc28ba247ed7fae *src/git2r_note.c
+3eb513ec77ba70ecba4d47d0cd3fc4a4 *src/git2r_note.c
 00c8c66f54b30fac6733aad059256cdf *src/git2r_note.h
 2c61becd4f45503ce7ce80d3e9acdaac *src/git2r_object.c
 5cfce52edcef1af271df02583927c19e *src/git2r_object.h
@@ -206,7 +206,7 @@ d1629967caccb4c27989a9723fb03369 *src/git2r_reference.h
 8b6e7c2e4207bdb8490e4d3b5284cd67 *src/git2r_reflog.h
 985d6584a688c8ef9087d036924a373a *src/git2r_remote.c
 ccdd219017dfc1dbf7304963dada6880 *src/git2r_remote.h
-99f17c63dc14f9b7ffeb024d49a1e52b *src/git2r_repository.c
+24f775d6cd4e747a96ded4e9d56c3bfe *src/git2r_repository.c
 1fd2bf3801d83d0a1f09df1852ac458f *src/git2r_repository.h
 3b457587acc0a5220a20840a049be6a7 *src/git2r_reset.c
 1f1475f57ee2f1607cd65c99cf54c9b6 *src/git2r_reset.h
@@ -216,11 +216,11 @@ a5605827f68d65572c28ac647cbf0f55 *src/git2r_revparse.h
 3cfdeca33edbeab473f55d11cd56263d *src/git2r_revwalk.h
 8c464741e959b2f40be05c2c4eb936c7 *src/git2r_signature.c
 c644c059e5a3755fd2a42cedd35e8d7e *src/git2r_signature.h
-9aed9b43cbc8583cacd4a0fa9af9872a *src/git2r_stash.c
+9644e8974554585fe17e8124201faa79 *src/git2r_stash.c
 3e9721fb8188f18df721813efe34d6a7 *src/git2r_stash.h
 5402f643379a5b2841773525d9cebde0 *src/git2r_status.c
 bf57139eb87e930232eae7507ea17964 *src/git2r_status.h
-10d9463b7930eadf81ad570c7021754b *src/git2r_tag.c
+f2eb13868354074ea73471a2f3def8b1 *src/git2r_tag.c
 28b39608d1bc8c669cf17f6fbf578f44 *src/git2r_tag.h
 88aa0f40d1ab8c40089299fe14373395 *src/git2r_transfer.c
 f78ee8e7d18ebfb589839ede22c154c6 *src/git2r_transfer.h
@@ -398,7 +398,7 @@ d0ff89d7fb6aaf710b8faa728192ff59 *src/libgit2/src/global.h
 f2d0df05ca4681f207ba059a145abaaa *src/libgit2/src/hash.h
 b7b563e3e441a2ab031ab2ae9c7e0d90 *src/libgit2/src/hash/hash_collisiondetect.h
 f057c15ed35303db074fd9b9226a90aa *src/libgit2/src/hash/hash_openssl.h
-5650a04affb71c15d1f5699164aa3286 *src/libgit2/src/hash/sha1dc/sha1.c
+e6cd8ba378f1fea9998769fc5be7f836 *src/libgit2/src/hash/sha1dc/sha1.c
 21c70909bcd057283a6a2b023256dafc *src/libgit2/src/hash/sha1dc/sha1.h
 14bd8908eb52a8a4a426faf9c538d077 *src/libgit2/src/hash/sha1dc/ubc_check.c
 6633a9728e2b0278c0a60eb3f77651a3 *src/libgit2/src/hash/sha1dc/ubc_check.h
