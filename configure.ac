@@ -1,5 +1,5 @@
 # git2r, R bindings to the libgit2 library.
-# Copyright (C) 2013-2018 The git2r contributors
+# Copyright (C) 2013-2019 The git2r contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2,
@@ -18,8 +18,13 @@ AC_PREREQ([2.69])
 AC_INIT([git2r], [see.DESCRIPTION.file], [https://github.com/ropensci/git2r/issues])
 AC_CONFIG_SRCDIR([src/git2r.c])
 AC_CONFIG_AUX_DIR([tools])
-m4_include([tools/libcurl.m4])
 AC_CANONICAL_HOST
+
+m4_include([tools/iconv.m4])
+m4_include([tools/lib-ld.m4])
+m4_include([tools/lib-link.m4])
+m4_include([tools/lib-prefix.m4])
+m4_include([tools/pkg.m4])
 
 # Checks for programs.
 AC_PROG_CC
@@ -101,6 +106,51 @@ if test "x${USE_BUNDLED_LIBGIT2}" = xno; then
     libgit2_ver_ok=no
     ${CC} ${CPPFLAGS} ${PKG_CFLAGS} ${CFLAGS} -E tools/version.c >/dev/null 2>&1 && libgit2_ver_ok=yes
     AC_MSG_RESULT([${libgit2_ver_ok}])
+
+    # The function 'git_buf_free' is deprecated in libgit2. Use
+    # 'git_buf_dispose', if available, instead.
+    AC_MSG_CHECKING([whether the libgit2 function git_buf_dispose is available])
+    have_buf_dispose=no
+    AC_LANG_CONFTEST([AC_LANG_PROGRAM(
+    [[#include <git2.h>]],
+    [[git_buf_dispose(NULL);]])])
+    PKG_CFLAGS="${PKG_CFLAGS} -Werror" "$RBIN" CMD SHLIB conftest.c \
+    1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && have_buf_dispose=yes
+    AC_MSG_RESULT([${have_buf_dispose}])
+    if test "x${have_buf_dispose}" = xyes; then
+        PKG_CFLAGS="${PKG_CFLAGS} -DGIT2R_HAVE_BUF_DISPOSE"
+    fi
+
+    # The constants GIT_OBJ_ANY, GIT_OBJ_BLOB, GIT_OBJ_COMMIT,
+    # GIT_OBJ_TAG_GIT_OBJ_TREE and GIT_REF_OID are deprecated in
+    # libgit2. Use GIT_OBJECT_ANY, GIT_OBJECT_BLOB, GIT_OBJECT_COMMIT,
+    # GIT_OBJECT_TAG_GIT_OBJECT_TREE and GIT_REFERENCE_DIRECT, if
+    # available, instead.
+    AC_MSG_CHECKING([whether the libgit2 constant GIT_OBJECT_ANY is available])
+    have_git_object_any=no
+    AC_LANG_CONFTEST([AC_LANG_PROGRAM(
+    [[#include <git2.h>]],
+    [[git_object_typeisloose(GIT_OBJECT_ANY);]])])
+    PKG_CFLAGS="${PKG_CFLAGS} -Werror" "$RBIN" CMD SHLIB conftest.c \
+    1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && have_git_object_any=yes
+    AC_MSG_RESULT([${have_git_object_any}])
+    if test "x${have_git_object_any}" = xyes; then
+        PKG_CFLAGS="${PKG_CFLAGS} -DGIT2R_HAVE_OBJECT_ANY"
+    fi
+
+    # Several libgit2 error functions and enumaration values have been
+    # deprecated, use newer versions.
+    AC_MSG_CHECKING([whether the libgit2 function git_error_last is available])
+    have_git_error_last=no
+    AC_LANG_CONFTEST([AC_LANG_PROGRAM(
+    [[#include <git2.h>]],
+    [[git_error_last();]])])
+    PKG_CFLAGS="${PKG_CFLAGS} -Werror" "$RBIN" CMD SHLIB conftest.c \
+    1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && have_git_error_last=yes
+    AC_MSG_RESULT([${have_git_error_last}])
+    if test "x${have_git_error_last}" = xyes; then
+        PKG_CFLAGS="${PKG_CFLAGS} -DGIT2R_HAVE_GIT_ERROR"
+    fi
 
     # For debugging
     echo "----- Results of the git2r package configure -----"
@@ -226,38 +276,44 @@ if test "x${have_zlib}" = xno; then
   ---------------------------------------------])
 fi
 
-# Check for SSL
+# Check for SSL for https transport
 have_ssl=no
+case "${host_os}" in
+    darwin*)
+        # On macOS, use the Security and CoreFoundation framework
+        have_ssl=yes
+        CPPFLAGS="${CPPFLAGS} -DGIT_SECURE_TRANSPORT=1 -DGIT_HTTPS=1"
+        LIBS="${LIBS} -framework Security -framework CoreFoundation"
+    ;;
+    *)
+        if test "x${OPENSSL_INCLUDES}" = x; then :; else
+            CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
+        fi
 
-if test "x${OPENSSL_INCLUDES}" = x; then :; else
-    CPPFLAGS="${CPPFLAGS} -I${OPENSSL_INCLUDES}"
-fi
+        AC_SEARCH_LIBS([EVP_EncryptInit],
+                       [crypto],
+                       [AC_SEARCH_LIBS([SSL_library_init], [ssl], [have_ssl=yes])
+                        AC_SEARCH_LIBS([OPENSSL_init_ssl], [ssl], [have_ssl=yes])])
 
-AC_SEARCH_LIBS([EVP_EncryptInit],
-               [crypto],
-               [AC_SEARCH_LIBS([SSL_library_init], [ssl], [have_ssl=yes])
-                AC_SEARCH_LIBS([OPENSSL_init_ssl], [ssl], [have_ssl=yes])])
+        if test "x${have_ssl}" = xno; then
+            if test [ -n "$PKG_CONFIG" ] ; then
+                PKG_CHECK_MODULES([openssl], [openssl],
+                                  [CPPFLAGS="${openssl_CFLAGS} ${CPPFLAGS}"
+                                   LIBS="${openssl_LIBS} ${LIBS}"
+                                   have_ssl=yes], [ ])
+            fi
+        fi
 
-if test "x${have_ssl}" = xno; then
-    if test [ -n "$PKG_CONFIG" ] ; then
-        PKG_CHECK_MODULES([openssl], [openssl],
-                          [CPPFLAGS="${openssl_CFLAGS} ${CPPFLAGS}"
-                           LIBS="${openssl_LIBS} ${LIBS}"
-                           have_ssl=yes], [ ])
-    fi
-fi
-
-if test "x${have_ssl}" = xno; then
-    case "${host_os}" in
-        darwin*)
-        ;;
-        *)
-    AC_MSG_FAILURE([
+        if test "x${have_ssl}" = xyes; then
+            CPPFLAGS="${CPPFLAGS} -DGIT_OPENSSL=1 -DGIT_HTTPS=1"
+        else
+            AC_MSG_WARN([
   ---------------------------------------------
-   The OpenSSL library that is required to
-   build git2r was not found.
+   Unable to find the OpenSSL library on this
+   system. Building a version without support
+   for https transport.
 
-   Please install:
+   To build with https support, please install:
      libssl-dev    (package on e.g. Debian and Ubuntu)
      openssl-devel (package on e.g. Fedora, CentOS and RHEL)
    and try again.
@@ -268,9 +324,9 @@ if test "x${have_ssl}" = xno; then
    the include and lib path to OpenSSL with:
    R CMD INSTALL git2r --configure-vars='LIBS=-L/path/to/libs CPPFLAGS=-I/path/to/headers'
   ---------------------------------------------])
-        ;;
-    esac
-fi
+        fi
+    ;;
+esac
 
 # Check for LibSSH2
 have_ssh2=no
@@ -318,12 +374,6 @@ case "${host_os}" in
     ;;
 esac
 
-# Check for libcurl
-LIBCURL_CHECK_CONFIG(, , [have_libcurl=yes], [have_libcurl=no])
-if test "x${have_libcurl}" = xyes; then
-    CPPFLAGS="${CPPFLAGS} -DGIT_CURL"
-fi
-
 # Configuration specific for solaris
 case "${host_os}" in
     solaris*)
@@ -350,21 +400,16 @@ case "${host_os}" in
         GIT2R_SRC_SHA1DC="libgit2/src/hash/sha1dc/sha1.o libgit2/src/hash/sha1dc/ubc_check.o"
     ;;
     *)
-        CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_OPENSSL=1"
+        if test "x${have_ssl}" = xyes; then
+            CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_OPENSSL=1"
+        else
+            CPPFLAGS="${CPPFLAGS} -DGIT_SHA1_COLLISIONDETECT=1 -DSHA1DC_NO_STANDARD_INCLUDES=1"
+            CPPFLAGS="${CPPFLAGS} -DSHA1DC_CUSTOM_INCLUDE_SHA1_C=\\\"common.h\\\" -DSHA1DC_CUSTOM_INCLUDE_UBC_CHECK_C=\\\"common.h\\\""
+            GIT2R_SRC_SHA1DC="libgit2/src/hash/sha1dc/sha1.o libgit2/src/hash/sha1dc/ubc_check.o"
+        fi
     ;;
 esac
 
-# Add definition for https
-case "${host_os}" in
-    darwin*)
-        # On macOS, use Security and CoreFoundation framework
-        CPPFLAGS="${CPPFLAGS} -DGIT_SECURE_TRANSPORT=1 -DGIT_HTTPS=1"
-        LIBS="${LIBS} -framework Security -framework CoreFoundation"
-    ;;
-    *)
-        CPPFLAGS="${CPPFLAGS} -DGIT_OPENSSL -DGIT_HTTPS=1"
-    ;;
-esac
 
 # Add definitions specific for solaris
 case "${host_os}" in
@@ -413,18 +458,33 @@ if test $ac_cv_func_qsort_s = yes; then
     CPPFLAGS="${CPPFLAGS} -DHAVE_QSORT_S"
 fi
 
+# The function 'git_buf_free' is deprecated in libgit2. Use
+# 'git_buf_dispose' instead.
+#
+CPPFLAGS="${CPPFLAGS} -DGIT_DEPRECATE_HARD -DGIT2R_HAVE_BUF_DISPOSE"
+
+# The constants GIT_OBJ_ANY, GIT_OBJ_BLOB, GIT_OBJ_COMMIT,
+# GIT_OBJ_TAG_GIT_OBJ_TREE and GIT_REF_OID are deprecated in
+# libgit2. Use GIT_OBJECT_ANY, GIT_OBJECT_BLOB, GIT_OBJECT_COMMIT,
+# GIT_OBJECT_TAG_GIT_OBJECT_TREE and GIT_REFERENCE_DIRECT instead.
+CPPFLAGS="${CPPFLAGS} -DGIT2R_HAVE_OBJECT_ANY"
+
+# Several libgit2 error functions and enumaration values have been
+# deprecated, use newer versions.
+CPPFLAGS="${CPPFLAGS} -DGIT2R_HAVE_GIT_ERROR"
+
 AC_SUBST(GIT2R_SRC_REGEX)
 AC_SUBST(GIT2R_SRC_SHA1DC)
 AC_SUBST([PKG_CFLAGS], ["${PKG_CFLAGS} ${LIBSSH2_CFLAGS}"])
-AC_SUBST([PKG_CPPFLAGS], ["${CPPFLAGS} ${LIBCURL_CPPFLAGS}"])
-AC_SUBST([PKG_LIBS], ["${LIBS} ${LIBSSH2_LIBS} ${LIBCURL} ${LIBICONV}"])
+AC_SUBST([PKG_CPPFLAGS], ["${CPPFLAGS}"])
+AC_SUBST([PKG_LIBS], ["${LIBS} ${LIBSSH2_LIBS} ${LIBICONV}"])
 
 AC_CONFIG_FILES([src/Makevars_libgit2])
 
 echo "
   ----- Results of the git2r package configure -----
 
-    HTTPS transport......................: yes
+    HTTPS transport......................: ${have_ssl}
     LibSSH2 to enable the SSH transport..: ${have_ssh2}
 
   --------------------------------------------------

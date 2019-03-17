@@ -39,11 +39,12 @@ new_commit <- commit(repo, "Commit message")
 ## Lookup blob
 blob <- lookup(repo, "cd0875583aabe89ee197ea133980a9085d08e497")
 stopifnot(isTRUE(is_blob(blob)))
+stopifnot(identical(sha(blob), "cd0875583aabe89ee197ea133980a9085d08e497"))
 stopifnot(identical(is_binary(blob), FALSE))
 stopifnot(identical(blob, lookup(repo, "cd0875")))
 stopifnot(identical(length(blob), 13L))
 stopifnot(identical(content(blob), "Hello world!"))
-blob
+stopifnot(identical(print(blob), blob))
 
 ## Add one more commit
 f <- file(file.path(path, "test.txt"), "wb")
@@ -53,6 +54,15 @@ add(repo, "test.txt")
 blob <- lookup(repo, tree(commit(repo, "New commit message"))$id[1])
 stopifnot(identical(content(blob),
                     c("Hello world!", "HELLO WORLD!", "HeLlO wOrLd!")))
+
+## Check content of binary file
+set.seed(42)
+writeBin(as.raw((sample(0:255, 1000, replace=TRUE))),
+         con=file.path(path, "test.bin"))
+add(repo, "test.bin")
+commit(repo, "Add binary file")
+blob <- tree(last_commit(repo))["test.bin"]
+stopifnot(identical(content(blob), NA_character_))
 
 ## Hash
 stopifnot(identical(hash("Hello, world!\n"),

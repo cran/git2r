@@ -30,10 +30,28 @@ repo <- init(path)
 cfg <- config(repo, user.name="Alice", user.email="alice@example.org")
 
 ## Check configuration
+stopifnot(identical(print(cfg), cfg))
 stopifnot("local" %in% names(cfg))
 stopifnot("user.name" %in% names(cfg$local))
 stopifnot(identical(cfg$local$user.name, "Alice"))
 stopifnot(identical(cfg$local$user.email, "alice@example.org"))
+
+## Check that config fails for non-character entry.
+tools::assertError(config(repo, test = 5))
+
+## Check config method with missing repo argument
+wd <- setwd(path)
+cfg <- config(user.name="Alice", user.email="alice@example.org")
+stopifnot("local" %in% names(cfg))
+stopifnot("user.name" %in% names(cfg$local))
+stopifnot(identical(cfg$local$user.name, "Alice"))
+stopifnot(identical(cfg$local$user.email, "alice@example.org"))
+stopifnot(identical(git_config_files(repo = repo)$local,
+                    git_config_files(repo = NULL)$local))
+stopifnot(identical(git_config_files(repo = repo)$local,
+                    git_config_files(repo = repo$path)$local))
+if (!is.null(wd))
+    setwd(wd)
 
 ## Delete entries
 cfg <- config(repo, user.name=NULL, user.email=NULL)
@@ -54,9 +72,14 @@ stopifnot(identical(cfg$local$user.email, user.email))
 
 ## Check git config files
 cfg <- git_config_files(repo)
-stopifnot(identical(length(cfg), 4L))
-stopifnot(identical(names(cfg), c("system", "xdg", "global", "local")))
-stopifnot(!is.na(cfg$local))
+stopifnot(identical(nrow(cfg), 4L))
+stopifnot(identical(names(cfg), c("file", "path")))
+stopifnot(identical(cfg$file, c("system", "xdg", "global", "local")))
+stopifnot(!is.na(cfg$path[4]))
+
+## Check that the local config file is NA for an invalid repo
+## argument.
+stopifnot(is.na(git_config_files(5)$local))
 
 ## Check location of .gitconfig on Windows
 if (identical(Sys.getenv("APPVEYOR"), "True")) {

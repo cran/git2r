@@ -241,4 +241,5 @@ format.git_blob <- function(x, ...) {
 ##' @export
 print.git_blob <- function(x, ...) {
     cat(format(x, ...), "\n", sep = "")
+    invisible(x)
 }

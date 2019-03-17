@@ -4,8 +4,8 @@
 \alias{commits}
 \title{Commits}
 \usage{
-commits(repo = ".", topological = TRUE, time = TRUE, reverse = FALSE,
-  n = NULL)
+commits(repo = ".", topological = TRUE, time = TRUE,
+  reverse = FALSE, n = NULL)
 }
 \arguments{
 \item{repo}{a path to a repository or a \code{git_repository}
@@ -22,7 +22,7 @@ topological sorting. Default is TRUE.}
 with topological and/or time sorting. Default is FALSE.}
 
 \item{n}{The upper limit of the number of commits to output. The
-defualt is NULL for unlimited number of commits.}
+default is NULL for unlimited number of commits.}
 }
 \value{
 list of commits in repository

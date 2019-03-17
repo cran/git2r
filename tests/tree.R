@@ -38,6 +38,8 @@ commit(repo, "Commit message")
 
 ## Check tree
 stopifnot(is_tree(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5")))
+stopifnot(identical(sha(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5")),
+                    "a0b0b9e615e9e433eb5f11859e9feac4564c58c5"))
 stopifnot(is_tree(tree(commits(repo)[[1]])))
 stopifnot(identical(lookup(repo, "a0b0b9e615e9e433eb5f11859e9feac4564c58c5"),
                     tree(commits(repo)[[1]])))
@@ -47,8 +49,23 @@ stopifnot(identical(length(tree(commits(repo)[[1]])), 1L))
 stopifnot(identical(names(as.data.frame(tree(commits(repo)[[1]]))),
                     c("mode", "type", "sha", "name")))
 
+## Coerce to list and check length
+stopifnot(identical(length(as.list(tree(last_commit(repo)))), 1L))
+
+## Print and summary
+stopifnot(identical(print(tree(last_commit(repo))), tree(last_commit(repo))))
+summary(tree(last_commit(repo)))
+
+## Check indexing
+stopifnot(is_blob(tree(last_commit(repo))[TRUE]))
+stopifnot(is_blob(tree(last_commit(repo))["test.txt"]))
+res <- tools::assertError(tree(last_commit(repo))[data.frame()])
+stopifnot(length(grep("Invalid index", res[[1]]$message)) > 0)
+
 ## Check ls_tree
 stopifnot(identical(ls_tree(repo = repo), ls_tree(repo = path)))
+stopifnot(identical(ls_tree(tree = sha(tree(last_commit(repo))), repo = repo),
+                    ls_tree(repo = repo)))
 
 ## Cleanup
 unlink(path, recursive=TRUE)

@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2015 The git2r contributors
+## Copyright (C) 2013-2018 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,7 +14,7 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library(git2r)
+library("git2r")
 
 ## For debugging
 sessionInfo()
@@ -41,6 +41,8 @@ remote_add(repo, "playground",
 stopifnot(identical(remotes(repo), "playground"))
 stopifnot(identical(remote_url(repo, "playground"),
                     "https://github.com/gaborcsardi/playground"))
+stopifnot(identical(remote_url(repo),
+                    "https://github.com/gaborcsardi/playground"))
 
 ## Rename a remote
 remote_rename(repo, "playground", "foobar")
@@ -60,10 +62,12 @@ remote_remove(repo, "foobar")
 stopifnot(identical(remotes(repo), character(0)))
 
 if (identical(Sys.getenv("NOT_CRAN"), "true")) {
-    refs <- remote_ls("https://github.com/ropensci/git2r")
-    stopifnot(length(refs) > 0)
-    stopifnot(names(refs) > 0)
-    stopifnot(any(names(refs) == "HEAD"))
+    if (isTRUE(libgit2_features()$https)) {
+        refs <- remote_ls("https://github.com/ropensci/git2r")
+        stopifnot(length(refs) > 0)
+        stopifnot(names(refs) > 0)
+        stopifnot(any(names(refs) == "HEAD"))
+    }
 }
 
 # an invalid URL should throw an error

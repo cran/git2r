@@ -584,6 +584,8 @@ print.git_repository <- function(x, ...) {
                     substring(as.character(h$author$when), 1, 10),
                     h$summary))
     }
+
+    invisible(x)
 }
 
 ##' Summary of repository
@@ -706,7 +708,7 @@ workdir <- function(repo = ".") {
 ##'
 ##' @param path A character vector specifying the path to a file or
 ##'     folder
-##' @param ceiling The defult is to not use the ceiling argument and
+##' @param ceiling The default is to not use the ceiling argument and
 ##'     start the lookup from path and walk across parent
 ##'     directories. When ceiling is 0, the lookup is only in
 ##'     path. When ceiling is 1, the lookup is in both the path and

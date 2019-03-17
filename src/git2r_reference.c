@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2018 The git2r contributors
+ *  Copyright (C) 2013-2019 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -19,18 +19,76 @@
 #include <git2.h>
 
 #include "git2r_arg.h"
+#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_reference.h"
 #include "git2r_repository.h"
 #include "git2r_S3.h"
 
 /**
+ * Init slots in S3 class git_reference.
+ *
+ * @param source A git_reference pointer
+ * @param dest S3 class git_reference to initialize
+ * @return void
+ */
+static void git2r_reference_init(git_reference *source, SEXP dest)
+{
+    char sha[GIT_OID_HEXSZ + 1];
+
+    SET_VECTOR_ELT(
+        dest,
+        git2r_S3_item__git_reference__name,
+        Rf_mkString(git_reference_name(source)));
+
+    SET_VECTOR_ELT(
+        dest,
+        git2r_S3_item__git_reference__shorthand,
+        Rf_mkString(git_reference_shorthand(source)));
+
+    switch (git_reference_type(source)) {
+    case GIT2R_REFERENCE_DIRECT:
+        SET_VECTOR_ELT(
+            dest,
+            git2r_S3_item__git_reference__type,
+            Rf_ScalarInteger(GIT2R_REFERENCE_DIRECT));
+
+        git_oid_fmt(sha, git_reference_target(source));
+        sha[GIT_OID_HEXSZ] = '\0';
+        SET_VECTOR_ELT(
+            dest,
+            git2r_S3_item__git_reference__sha,
+            Rf_mkString(sha));
+        break;
+    case GIT2R_REFERENCE_SYMBOLIC:
+        SET_VECTOR_ELT(
+            dest,
+            git2r_S3_item__git_reference__type,
+            Rf_ScalarInteger(GIT2R_REFERENCE_SYMBOLIC));
+
+        SET_VECTOR_ELT(
+            dest,
+            git2r_S3_item__git_reference__target,
+            Rf_mkString(git_reference_symbolic_target(source)));
+        break;
+    default:
+        git2r_error(__func__, NULL, git2r_err_reference, NULL);
+    }
+
+    if (Rf_isNull(VECTOR_ELT(dest, git2r_S3_item__git_reference__target))) {
+        SET_VECTOR_ELT(
+            dest,
+            git2r_S3_item__git_reference__target,
+            Rf_ScalarString(NA_STRING));
+    }
+}
+
+/**
  * Lookup the full name of a reference by DWIMing its short name
  *
  * @param repo S3 class git_repository
  * @param shorthand The short name for the reference
- * @return Character vector of length one with the full name of the
- * reference
+ * @return S3 class git_reference object
  */
 SEXP git2r_reference_dwim(SEXP repo, SEXP shorthand)
 {
@@ -53,9 +111,11 @@ SEXP git2r_reference_dwim(SEXP repo, SEXP shorthand)
     if (error)
         goto cleanup;
 
-    PROTECT(result = Rf_allocVector(STRSXP, 1));
+    PROTECT(result = Rf_mkNamed(VECSXP, git2r_S3_items__git_reference));
     nprotect++;
-    SET_STRING_ELT(result, 0, Rf_mkChar(git_reference_name(reference)));
+    Rf_setAttrib(result, R_ClassSymbol,
+                 Rf_mkString(git2r_S3_class__git_reference));
+    git2r_reference_init(reference, result);
 
 cleanup:
     git_reference_free(reference);
@@ -65,67 +125,9 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, giterr_last(), NULL, NULL);
+        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
 
     return result;
-}
-
-/**
- * Init slots in S3 class git_reference.
- *
- * @param source A git_reference pointer
- * @param dest S3 class git_reference to initialize
- * @return void
- */
-void git2r_reference_init(git_reference *source, SEXP dest)
-{
-    char sha[GIT_OID_HEXSZ + 1];
-
-    SET_VECTOR_ELT(
-        dest,
-        git2r_S3_item__git_reference__name,
-        Rf_mkString(git_reference_name(source)));
-
-    SET_VECTOR_ELT(
-        dest,
-        git2r_S3_item__git_reference__shorthand,
-        Rf_mkString(git_reference_shorthand(source)));
-
-    switch (git_reference_type(source)) {
-    case GIT_REF_OID:
-        SET_VECTOR_ELT(
-            dest,
-            git2r_S3_item__git_reference__type,
-            Rf_ScalarInteger(GIT_REF_OID));
-
-        git_oid_fmt(sha, git_reference_target(source));
-        sha[GIT_OID_HEXSZ] = '\0';
-        SET_VECTOR_ELT(
-            dest,
-            git2r_S3_item__git_reference__sha,
-            Rf_mkString(sha));
-        break;
-    case GIT_REF_SYMBOLIC:
-        SET_VECTOR_ELT(
-            dest,
-            git2r_S3_item__git_reference__type,
-            Rf_ScalarInteger(GIT_REF_SYMBOLIC));
-
-        SET_VECTOR_ELT(
-            dest,
-            git2r_S3_item__git_reference__target,
-            Rf_mkString(git_reference_symbolic_target(source)));
-        break;
-    default:
-        git2r_error(__func__, NULL, git2r_err_reference, NULL);
-    }
-
-    if (Rf_isNull(VECTOR_ELT(dest, git2r_S3_item__git_reference__target))) {
-        SET_VECTOR_ELT(
-            dest,
-            git2r_S3_item__git_reference__target,
-            Rf_ScalarString(NA_STRING));
-    }
 }
 
 /**
@@ -186,7 +188,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, giterr_last(), NULL, NULL);
+        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
 
     return result;
 }

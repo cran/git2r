@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -17,10 +17,14 @@
 ##' Ahead Behind
 ##'
 ##' Count the number of unique commits between two commit objects.
-##' @param local a git_commit object.
-##' @param upstream a git_commit object.
+##' @param local a git_commit object. Can also be a tag or a branch,
+##'     and in that case the commit will be the target of the tag or
+##'     branch.
+##' @param upstream a git_commit object. Can also be a tag or a
+##'     branch, and in that case the commit will be the target of the
+##'     tag or branch.
 ##' @return An integer vector of length 2 with number of commits that
-##' the upstream commit is ahead and behind the local commit
+##'     the upstream commit is ahead and behind the local commit
 ##' @export
 ##' @examples \dontrun{
 ##' ## Create a directory in tempdir
@@ -36,6 +40,7 @@
 ##'            con = file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_1 <- commit(repo, "Commit message 1")
+##' tag_1 <- tag(repo, "Tagname1", "Tag message 1")
 ##'
 ##' # Change file and commit
 ##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
@@ -43,10 +48,24 @@
 ##'              con = file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_2 <- commit(repo, "Commit message 2")
+##' tag_2 <- tag(repo, "Tagname2", "Tag message 2")
 ##'
 ##' ahead_behind(commit_1, commit_2)
+##' ahead_behind(tag_1, tag_2)
 ##' }
 ahead_behind <- function(local = NULL, upstream = NULL) {
+    if (is_tag(local)) {
+        local <- lookup(local$repo, local$target)
+    } else if (is_branch(local)) {
+        local <- lookup(local$repo, branch_target(local))
+    }
+
+    if (is_tag(upstream)) {
+        upstream <- lookup(upstream$repo, upstream$target)
+    } else if (is_branch(upstream)) {
+        upstream <- lookup(upstream$repo, branch_target(upstream))
+    }
+
     .Call(git2r_graph_ahead_behind, local, upstream)
 }
 
@@ -168,7 +187,7 @@ commit <- function(repo      = ".",
 ##' @param reverse Sort the commits in reverse order; can be combined
 ##'     with topological and/or time sorting. Default is FALSE.
 ##' @param n The upper limit of the number of commits to output. The
-##'     defualt is NULL for unlimited number of commits.
+##'     default is NULL for unlimited number of commits.
 ##' @return list of commits in repository
 ##' @export
 ##' @examples
@@ -246,7 +265,7 @@ commits <- function(repo        = ".",
 
             if (is.null(x))
                 break
-            result <- append(result, x)
+            result[[length(result) + 1]] <- x
 
             ## Get parent to commit
             x <- tryCatch(parents(x)[[1]], error = function(e) NULL)
@@ -296,9 +315,12 @@ last_commit <- function(repo = ".") {
 ##' Descendant
 ##'
 ##' Determine if a commit is the descendant of another commit
-##' @param commit a git_commit object.
+##' @param commit a git_commit object. Can also be a tag or a branch,
+##'     and in that case the commit will be the target of the tag or
+##'     branch.
 ##' @param ancestor a git_commit object to check if ancestor to
-##'     \code{commit}.
+##'     \code{commit}. Can also be a tag or a branch, and in that case
+##'     the commit will be the target of the tag or branch.
 ##' @return TRUE if \code{commit} is descendant of \code{ancestor},
 ##'     else FALSE
 ##' @export
@@ -317,6 +339,7 @@ last_commit <- function(repo = ".") {
 ##'            con = file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_1 <- commit(repo, "Commit message 1")
+##' tag_1 <- tag(repo, "Tagname1", "Tag message 1")
 ##'
 ##' # Change file and commit
 ##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
@@ -324,11 +347,26 @@ last_commit <- function(repo = ".") {
 ##'              con = file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_2 <- commit(repo, "Commit message 2")
+##' tag_2 <- tag(repo, "Tagname2", "Tag message 2")
 ##'
 ##' descendant_of(commit_1, commit_2)
 ##' descendant_of(commit_2, commit_1)
+##' descendant_of(tag_1, tag_2)
+##' descendant_of(tag_2, tag_1)
 ##' }
 descendant_of <- function(commit = NULL, ancestor = NULL) {
+    if (is_tag(commit)) {
+        commit <- lookup(commit$repo, commit$target)
+    } else if (is_branch(commit)) {
+        commit <- lookup(commit$repo, branch_target(commit))
+    }
+
+    if (is_tag(ancestor)) {
+        ancestor <- lookup(ancestor$repo, ancestor$target)
+    } else if (is_branch(ancestor)) {
+        ancestor <- lookup(ancestor$repo, branch_target(ancestor))
+    }
+
     .Call(git2r_graph_descendant_of, commit, ancestor)
 }
 
@@ -454,7 +492,7 @@ parents <- function(object = NULL) {
 
 ##' @export
 format.git_commit <- function(x, ...) {
-    sprintf("[%s] %s: %s\n",
+    sprintf("[%s] %s: %s",
             substring(x$sha, 1, 7),
             substring(as.character(x$author$when), 1, 10),
             x$summary)
@@ -463,11 +501,11 @@ format.git_commit <- function(x, ...) {
 ##' @export
 print.git_commit <- function(x, ...) {
     cat(format(x, ...), "\n", sep = "")
+    invisible(x)
 }
 
 ##' @export
-summary.git_commit <- function(object, ...)
-{
+summary.git_commit <- function(object, ...) {
     is_merge_commit <- is_merge(object)
     po <- parents(object)
 

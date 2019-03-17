@@ -54,15 +54,24 @@ writeLines(c("First line in file 2.", "line Second in file 2."),
 add(repo, "example-2.txt")
 commit(repo, "Fourth commit message")
 
+# Missing branch to merge with should throw an error
+tools::assertError(merge(repo))
+
 ## Merge 'fix'
-merge(repo, "fix", TRUE, default_signature(repo))
+m <- merge(repo, "fix", TRUE, default_signature(repo))
+stopifnot(identical(format(m), "Merge"))
+
+## Merge 'fix' again
+m <- merge(repo, "fix", TRUE, default_signature(repo))
+stopifnot(identical(format(m), "Already up-to-date"))
 
 ## Check number of parents of each commit
 stopifnot(identical(sapply(commits(repo), function(x) length(parents(x))),
                     c(2L, 1L, 1L, 1L, 0L)))
 
 ## Check that last commit is a merge
-stopifnot(is_merge(lookup(repo, branch_target(repository_head(repo)))))
+stopifnot(is_merge(last_commit(repo)))
+summary(last_commit(repo))
 
 ## Check that metadata associated with merge is removed
 stopifnot(!file.exists(file.path(path, ".git", "MERGE_HEAD")))

@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -36,9 +36,16 @@ writeLines("Hello world!", file.path(path, "test.txt"))
 ## Commit without adding changes should produce an error
 tools::assertError(commit(repo, "Test to commit"))
 
-## Add and commit
+## Add
 add(repo, "test.txt")
-commit_1 <- commit(repo, "Commit message")
+
+## Commit with empty message should produce an error
+tools::assertError(commit(repo, ""))
+
+## Commit
+commit_1 <- commit(repo, "Commit message", session = TRUE)
+summary(commit_1)
+tag_1 <- tag(repo, "Tagname1", "Tag message 1")
 
 ## Check commit
 stopifnot(identical(commit_1$author$name, "Alice"))
@@ -48,6 +55,7 @@ stopifnot(identical(length(commits(repo)), 1L))
 stopifnot(identical(commits(repo)[[1]]$author$name, "Alice"))
 stopifnot(identical(commits(repo)[[1]]$author$email, "alice@example.org"))
 stopifnot(identical(parents(commit_1), list()))
+stopifnot(identical(print(commit_1), commit_1))
 
 ## Check is_commit
 stopifnot(identical(is_commit(commit_1), TRUE))
@@ -60,10 +68,16 @@ tools::assertError(commit(repo, "Test to commit"))
 writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "test.txt"))
 add(repo, "test.txt")
 commit_2 <- commit(repo, "Commit message 2")
+summary(commit_2)
+tag_2 <- tag(repo, "Tagname2", "Tag message 2")
 
 ## Check relationship
 stopifnot(identical(descendant_of(commit_2, commit_1), TRUE))
 stopifnot(identical(descendant_of(commit_1, commit_2), FALSE))
+stopifnot(identical(descendant_of(tag_2, tag_1), TRUE))
+stopifnot(identical(descendant_of(tag_1, tag_2), FALSE))
+stopifnot(identical(descendant_of(branches(repo)[[1]], commit_1), TRUE))
+stopifnot(identical(descendant_of(commit_1, branches(repo)[[1]]), FALSE))
 stopifnot(identical(length(parents(commit_2)), 1L))
 stopifnot(identical(parents(commit_2)[[1]], commit_1))
 
@@ -133,6 +147,7 @@ stopifnot(identical(length(commits(repo, n = -1)), 8L))
 stopifnot(identical(length(commits(repo, n = 2)), 2L))
 tools::assertError(commits(repo, n = 2.2))
 tools::assertError(commits(repo, n = "2"))
+tools::assertError(commits(repo, n = 1:2))
 
 ## Check to coerce repository to data.frame
 df <- as.data.frame(repo)
@@ -182,3 +197,18 @@ stopifnot(length(grep("'commit' must be an S3 class git_commit",
 
 ## Cleanup
 unlink(path, recursive=TRUE)
+
+if (identical(Sys.getenv("NOT_CRAN"), "true") ||
+    identical(Sys.getenv("R_COVR"), "true")) {
+    path <- tempfile(pattern="git2r-")
+    dir.create(path)
+    setwd(path)
+    system("git clone --depth 2 https://github.com/ropensci/git2r.git")
+
+    ## Check the number of commits in the shallow clone.
+    stopifnot(identical(length(commits(repository("git2r"))), 2L))
+    stopifnot(identical(length(commits(repository("git2r"), n = 1)), 1L))
+
+    ## Cleanup
+    unlink(path, recursive=TRUE)
+}

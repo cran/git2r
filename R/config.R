@@ -83,14 +83,17 @@ config <- function(repo = NULL, global = FALSE, user.name, user.email, ...)
         if (isTRUE(global)) {
             repo <- NULL
             if (.Platform$OS.type == "windows") {
-              # Ensure that git2r writes the config file to the root of the
-              # user's home directory by first creating an empty file. Otherwise
-              # it may be written to the user's Documents/ directory. Only
-              # create the empty file if the user has specified configuration
-              # options to set and no global config file exists.
-              if (is.na(git_config_files()$global) && length(variables) > 0) {
-                file.create(file.path(home_dir(), ".gitconfig"))
-              }
+                ## Ensure that git2r writes the config file to the
+                ## root of the user's home directory by first creating
+                ## an empty file. Otherwise it may be written to the
+                ## user's Documents/ directory. Only create the empty
+                ## file if the user has specified configuration
+                ## options to set and no global config file exists.
+                if (is.na(git_config_files()[["path"]][3])) {
+                    if (length(variables) > 0) {
+                        file.create(file.path(home_dir(), ".gitconfig"))
+                    }
+                }
             }
         } else if (is.null(repo)) {
             stop("Unable to locate local repository")
@@ -120,6 +123,8 @@ print.git_config <- function(x, ...) {
             cat(sprintf("        %s=%s\n", entry, x[[level]][[entry]][1]))
         })
     })
+
+    invisible(x)
 }
 
 ##' Locate the path to configuration files
@@ -148,8 +153,8 @@ print.git_config <- function(x, ...) {
 ##'   }
 ##' }
 ##' @template repo-param
-##' @return a named list with one item per potential configuration
-##'     file where \code{NA} means not found.
+##' @return a \code{data.frame} with one row per potential
+##'     configuration file where \code{NA} means not found.
 ##' @export
 git_config_files <- function(repo = ".") {
     ## Lookup repository
@@ -158,7 +163,7 @@ git_config_files <- function(repo = ".") {
     } else if (is.null(repo)) {
         repo <- discover_repository(getwd())
     } else if (is.character(repo) && (length(repo) == 1) &&
-               !is.na(repo) && dir.exists(repo)) {
+               !is.na(repo) && isTRUE(file.info(repo)$isdir)) {
         repo <- discover_repository(repo)
     } else {
         repo <- NULL
@@ -173,8 +178,10 @@ git_config_files <- function(repo = ".") {
             path <- NA_character_
     }
 
-    list(system = .Call(git2r_config_find_file, "system"),
-         xdg    = .Call(git2r_config_find_file, "xdg"),
-         global = .Call(git2r_config_find_file, "global"),
-         local  = path)
+    data.frame(file = c("system", "xdg", "global", "local"),
+               path = c(.Call(git2r_config_find_file, "system"),
+                        .Call(git2r_config_find_file, "xdg"),
+                        .Call(git2r_config_find_file, "global"),
+                        path),
+               stringsAsFactors = FALSE)
 }
