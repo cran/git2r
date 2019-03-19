@@ -1,6 +1,6 @@
-65e43608c5e2f72ad1f9bca16eb3e299 *DESCRIPTION
+682c8725831c673d44b2fb6198b00226 *DESCRIPTION
 6be2d864c6e5f7aa7b10dfc6b26e4874 *NAMESPACE
-62ee91c8d025948e7595bd1b95e905aa *NEWS
+f353bc17329e6f8fa9ec39baec1a096c *NEWS
 a051a3d150f55584c825790476494169 *R/blame.R
 c8de697825ef13b58fc6c08105892233 *R/blob.R
 f97f19a521973118dd13a863aea04ee7 *R/branch.R
@@ -38,8 +38,8 @@ ce60873f14f97425ad916c5bd523a046 *R/status.R
 056a6ad19e888ac36cd45eaa43e55ff0 *R/tree.R
 3d9e04941b4da3dbe3004091a455ac15 *R/when.R
 de70826e35ee5fafdfaf08dafbf9f162 *cleanup
-a5a276670c4b9f14bc94e42f351270be *configure
-76c413123e757649cdd15086683e5c78 *configure.ac
+21de9fc69df5534a24a33252a3c259a0 *configure
+63219502dadae0db1b4cf2699878c184 *configure.ac
 c3581a390bffb9df3adeeda347af35ad *inst/AUTHORS
 a570c78338c55f6460bebfc37da47a7b *inst/CITATION
 43e011b97b3d57c82da0bb4b1b93753d *inst/COPYING
@@ -588,7 +588,7 @@ e89321c4aa388c7d7ca865fd54fa0952 *src/libgit2/src/vector.c
 f454393ae743f3db53999bba7975dcae *src/libgit2/src/worktree.c
 934bb99cdd72ff320bcc6e3fe3de6ccf *src/libgit2/src/worktree.h
 febd9a4cfaf0f362067bcfd37a533893 *src/libgit2/src/xdiff/xdiff.h
-21c7a82c6f8520515fb2663953679c06 *src/libgit2/src/xdiff/xdiffi.c
+b150ffa4c29b886cdd1acf3d9ed19445 *src/libgit2/src/xdiff/xdiffi.c
 d7650bda93bed570818d4420fc699ebd *src/libgit2/src/xdiff/xdiffi.h
 33effe2ad82e89510f69e06d56190740 *src/libgit2/src/xdiff/xemit.c
 a6f80630bd86179645cf3330edc2bfd3 *src/libgit2/src/xdiff/xemit.h
