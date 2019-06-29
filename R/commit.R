@@ -54,19 +54,9 @@
 ##' ahead_behind(tag_1, tag_2)
 ##' }
 ahead_behind <- function(local = NULL, upstream = NULL) {
-    if (is_tag(local)) {
-        local <- lookup(local$repo, local$target)
-    } else if (is_branch(local)) {
-        local <- lookup(local$repo, branch_target(local))
-    }
-
-    if (is_tag(upstream)) {
-        upstream <- lookup(upstream$repo, upstream$target)
-    } else if (is_branch(upstream)) {
-        upstream <- lookup(upstream$repo, branch_target(upstream))
-    }
-
-    .Call(git2r_graph_ahead_behind, local, upstream)
+    .Call(git2r_graph_ahead_behind,
+          lookup_commit(local),
+          lookup_commit(upstream))
 }
 
 ##' Add sessionInfo to message
@@ -188,6 +178,13 @@ commit <- function(repo      = ".",
 ##'     with topological and/or time sorting. Default is FALSE.
 ##' @param n The upper limit of the number of commits to output. The
 ##'     default is NULL for unlimited number of commits.
+##' @param ref The name of a reference to list commits from e.g. a tag
+##'     or a branch. The default is NULL for the current branch.
+##' @param path The path to a file. If not NULL, only commits modifying
+##'     this file will be returned. Note that modifying commits that
+##'     occurred before the file was given its present name are not
+##'     returned; that is, the output of \code{git log} with
+##'     \code{--no-follow} is reproduced.
 ##' @return list of commits in repository
 ##' @export
 ##' @examples
@@ -213,6 +210,9 @@ commit <- function(repo      = ".",
 ##' add(repo, "example.txt")
 ##' commit(repo, "Second commit message")
 ##'
+##' ## Create a tag
+##' tag(repo, "Tagname", "Tag message")
+##'
 ##' ## Change file again and commit
 ##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
 ##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
@@ -221,14 +221,45 @@ commit <- function(repo      = ".",
 ##' add(repo, "example.txt")
 ##' commit(repo, "Third commit message")
 ##'
-##' ## List commits in repository
+##' ## Create a new file containing R code, and commit.
+##' writeLines(c("x <- seq(1,100)",
+##'              "print(mean(x))"),
+##'            file.path(path, "mean.R"))
+##' add(repo, "mean.R")
+##' commit(repo, "Fourth commit message")
+##'
+##' ## List the commits in the repository
 ##' commits(repo)
+##'
+##' ## List the commits starting from the tag
+##' commits(repo, ref = "Tagname")
+##'
+##' ## List the commits modifying example.txt and mean.R.
+##' commits(repo, path = "example.txt")
+##' commits(repo, path = "mean.R")
+##'
+##' ## Create and checkout 'dev' branch in the repo
+##' checkout(repo, "dev", create = TRUE)
+##'
+##' ## Add changes to the 'dev' branch
+##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
+##'            file.path(path, "example.txt"))
+##' add(repo, "example.txt")
+##' commit(repo, "Commit message in dev branch")
+##'
+##' ## Checkout the 'master' branch again and list the commits
+##' ## starting from the 'dev' branch.
+##' checkout(repo, "master")
+##' commits(repo, ref = "dev")
 ##' }
 commits <- function(repo        = ".",
                     topological = TRUE,
                     time        = TRUE,
                     reverse     = FALSE,
-                    n           = NULL)
+                    n           = NULL,
+                    ref         = NULL,
+                    path        = NULL)
 {
     ## Check limit in number of commits
     if (is.null(n)) {
@@ -243,7 +274,22 @@ commits <- function(repo        = ".",
         stop("'n' must be integer")
     }
 
+    if (!is.null(path)) {
+        if (!(is.character(path) && length(path) == 1)) {
+            stop("path must be a single file")
+        }
+    }
+
     repo <- lookup_repository(repo)
+    if (is_empty(repo))
+        return(list())
+
+    if (is.null(ref)) {
+        sha <- sha(repository_head(repo))
+    } else {
+        sha <- sha(lookup_commit(.Call(git2r_reference_dwim, repo, ref)))
+    }
+
     if (is_shallow(repo)) {
         ## FIXME: Remove this if-statement when libgit2 supports
         ## shallow clones, see #219.  Note: This workaround does not
@@ -253,7 +299,7 @@ commits <- function(repo        = ".",
         result <- list()
 
         ## Get latest commit
-        x <- lookup(repo, branch_target(repository_head(repo)))
+        x <- lookup(repo, sha)
 
         ## Repeat until no more parent commits
         repeat {
@@ -274,7 +320,26 @@ commits <- function(repo        = ".",
         return(result)
     }
 
-    .Call(git2r_revwalk_list, repo, topological, time, reverse, n)
+    if (!is.null(path)) {
+        repo_wd <- normalizePath(workdir(repo), winslash = "/")
+        if (!length(grep("/$", repo_wd)))
+            repo_wd <- paste0(repo_wd, "/")
+        path <- sanitize_path(path, repo_wd)
+        path_revwalk <- .Call(git2r_revwalk_list2, repo, sha, topological,
+                              time, reverse, path)
+        path_commits <- vapply(path_revwalk, function(x) !is.null(x),
+                               logical(1))
+
+        if (n == -1L) {
+            max_n <- sum(path_commits)
+        } else {
+            max_n <- n
+        }
+
+        return(path_revwalk[path_commits][seq_len(max_n)])
+    }
+
+    .Call(git2r_revwalk_list, repo, sha, topological, time, reverse, n)
 }
 
 ##' Last commit
@@ -355,19 +420,9 @@ last_commit <- function(repo = ".") {
 ##' descendant_of(tag_2, tag_1)
 ##' }
 descendant_of <- function(commit = NULL, ancestor = NULL) {
-    if (is_tag(commit)) {
-        commit <- lookup(commit$repo, commit$target)
-    } else if (is_branch(commit)) {
-        commit <- lookup(commit$repo, branch_target(commit))
-    }
-
-    if (is_tag(ancestor)) {
-        ancestor <- lookup(ancestor$repo, ancestor$target)
-    } else if (is_branch(ancestor)) {
-        ancestor <- lookup(ancestor$repo, branch_target(ancestor))
-    }
-
-    .Call(git2r_graph_descendant_of, commit, ancestor)
+    .Call(git2r_graph_descendant_of,
+          lookup_commit(commit),
+          lookup_commit(ancestor))
 }
 
 ##' Check if object is a git_commit object
