@@ -1,6 +1,6 @@
-1460ccf250d8e334f841f274d8e6230d *DESCRIPTION
+160cb80ab9996a60bb613f184b0de4c9 *DESCRIPTION
 8efe70e2c6a0531085ac04f706a4cfdc *NAMESPACE
-97b21678eb6c745a5fb2e3d9409f4fa3 *NEWS
+a82b39f84fc81246eca41c4d4fb47bc9 *NEWS
 a051a3d150f55584c825790476494169 *R/blame.R
 c8de697825ef13b58fc6c08105892233 *R/blob.R
 f97f19a521973118dd13a863aea04ee7 *R/branch.R
@@ -589,7 +589,7 @@ e89321c4aa388c7d7ca865fd54fa0952 *src/libgit2/src/vector.c
 f454393ae743f3db53999bba7975dcae *src/libgit2/src/worktree.c
 934bb99cdd72ff320bcc6e3fe3de6ccf *src/libgit2/src/worktree.h
 febd9a4cfaf0f362067bcfd37a533893 *src/libgit2/src/xdiff/xdiff.h
-21c7a82c6f8520515fb2663953679c06 *src/libgit2/src/xdiff/xdiffi.c
+b150ffa4c29b886cdd1acf3d9ed19445 *src/libgit2/src/xdiff/xdiffi.c
 d7650bda93bed570818d4420fc699ebd *src/libgit2/src/xdiff/xdiffi.h
 33effe2ad82e89510f69e06d56190740 *src/libgit2/src/xdiff/xemit.c
 a6f80630bd86179645cf3330edc2bfd3 *src/libgit2/src/xdiff/xemit.h
