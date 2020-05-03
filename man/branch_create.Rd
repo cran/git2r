@@ -4,10 +4,12 @@
 \alias{branch_create}
 \title{Create a branch}
 \usage{
-branch_create(commit = NULL, name = NULL, force = FALSE)
+branch_create(commit = last_commit(), name = NULL, force = FALSE)
 }
 \arguments{
-\item{commit}{Commit to which branch should point.}
+\item{commit}{Commit to which the branch should point. The default
+is to use the \code{last_commit()} function to determine the
+commit to which the branch should point.}
 
 \item{name}{Name for the branch}
 
@@ -27,8 +29,9 @@ dir.create(path)
 repo <- init(path)
 
 ## Create a user and commit a file
-config(repo, user.name="Alice", user.email="alice@example.org")
-writeLines("Hello world!", file.path(path, "example.txt"))
+config(repo, user.name = "Alice", user.email = "alice@example.org")
+lines <- "Hello world!"
+writeLines(lines, file.path(path, "example.txt"))
 add(repo, "example.txt")
 commit_1 <- commit(repo, "First commit message")
 
@@ -36,7 +39,8 @@ commit_1 <- commit(repo, "First commit message")
 branch_1 <- branch_create(commit_1, name = "test-branch")
 
 ## Add one more commit
-writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "example.txt"))
+lines <- c("Hello world!", "HELLO WORLD!")
+writeLines(lines, file.path(path, "example.txt"))
 add(repo, "example.txt")
 commit_2 <- commit(repo, "Another commit message")
 

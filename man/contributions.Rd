@@ -4,8 +4,11 @@
 \alias{contributions}
 \title{Contributions}
 \usage{
-contributions(repo = ".", breaks = c("month", "year", "quarter",
-  "week", "day"), by = c("commits", "author"))
+contributions(
+  repo = ".",
+  breaks = c("month", "year", "quarter", "week", "day"),
+  by = c("commits", "author")
+)
 }
 \arguments{
 \item{repo}{a path to a repository or a \code{git_repository}
@@ -35,18 +38,19 @@ repo_bare <- init(path_bare, bare = TRUE)
 
 ## Clone to repo 1 and config user
 repo_1 <- clone(path_bare, path_repo_1)
-config(repo_1, user.name="Alice", user.email="alice@example.org")
+config(repo_1, user.name = "Alice", user.email = "alice@example.org")
 
 ## Add changes to repo 1 and push to bare
-writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-           con = file.path(path_repo_1, "test.txt"))
+lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+writeLines(lines, file.path(path_repo_1, "test.txt"))
 add(repo_1, "test.txt")
 commit(repo_1, "First commit message")
 
 ## Add more changes to repo 1
-writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-             "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-           con = file.path(path_repo_1, "test.txt"))
+lines <- c(
+  "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+  "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+writeLines(lines, file.path(path_repo_1, "test.txt"))
 add(repo_1, "test.txt")
 commit(repo_1, "Second commit message")
 
@@ -55,13 +59,14 @@ push(repo_1, "origin", "refs/heads/master")
 
 ## Clone to repo 2
 repo_2 <- clone(path_bare, path_repo_2)
-config(repo_2, user.name="Bob", user.email="bob@example.org")
+config(repo_2, user.name = "Bob", user.email = "bob@example.org")
 
 ## Add changes to repo 2
-writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-             "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
-             "minim veniam, quis nostrud exercitation ullamco laboris nisi ut"),
-           con = file.path(path_repo_2, "test.txt"))
+lines <- c(
+  "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+  "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
+  "minim veniam, quis nostrud exercitation ullamco laboris nisi ut")
+writeLines(lines, file.path(path_repo_2, "test.txt"))
 add(repo_2, "test.txt")
 commit(repo_2, "Third commit message")
 

@@ -27,7 +27,7 @@ Environmental variables can be written to the file
 see \code{\link[base]{Startup}}. On GitHub, personal access tokens
 function like ordinary OAuth access tokens. They can be used
 instead of a password for Git over HTTPS, see
-\url{https://help.github.com/articles/creating-an-access-token-for-command-line-use/}
+\url{https://help.github.com/articles/creating-an-access-token-for-command-line-use}
 }
 \examples{
 \dontrun{
@@ -40,7 +40,9 @@ push(repo, credentials = cred)
 }
 }
 \seealso{
-Other git credential functions: \code{\link{cred_env}},
-  \code{\link{cred_ssh_key}}, \code{\link{cred_user_pass}}
+Other git credential functions: 
+\code{\link{cred_env}()},
+\code{\link{cred_ssh_key}()},
+\code{\link{cred_user_pass}()}
 }
 \concept{git credential functions}

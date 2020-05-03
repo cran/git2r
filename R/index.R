@@ -33,7 +33,7 @@
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file
 ##' writeLines("a", file.path(path, "a.txt"))
@@ -77,8 +77,7 @@
 ##' add(repo, "./glob_dir/*md")
 ##' status(repo)
 ##' }
-add <- function(repo = ".", path = NULL, force = FALSE)
-{
+add <- function(repo = ".", path = NULL, force = FALSE) {
     ## Documentation for the pathspec argument in the libgit2 function
     ## 'git_index_add_all' that git2r use internally:
     ##
@@ -92,9 +91,6 @@ add <- function(repo = ".", path = NULL, force = FALSE)
 
     repo <- lookup_repository(repo)
     repo_wd <- normalizePath(workdir(repo), winslash = "/")
-    if (!length(grep("/$", repo_wd)))
-        repo_wd <- paste0(repo_wd, "/")
-
     path <- vapply(path, sanitize_path, character(1), repo_wd = repo_wd)
 
     .Call(git2r_index_add_all, repo, path, isTRUE(force))
@@ -104,6 +100,9 @@ add <- function(repo = ".", path = NULL, force = FALSE)
 
 sanitize_path <- function(p, repo_wd) {
     np <- suppressWarnings(normalizePath(p, winslash = "/"))
+
+    if (!length(grep("/$", repo_wd)))
+        repo_wd <- paste0(repo_wd, "/")
 
     ## Check if the normalized path is a non-file e.g. a glob.
     if (!file.exists(np)) {
@@ -129,9 +128,8 @@ sanitize_path <- function(p, repo_wd) {
 ##' Remove files from the working tree and from the index
 ##'
 ##' @template repo-param
-##' @param path character vector with filenames to remove. The path
-##'     must be relative to the repository's working folder. Only
-##'     files known to Git are removed.
+##' @param path character vector with filenames to remove. Only files
+##'     known to Git are removed.
 ##' @return invisible(NULL)
 ##' @export
 ##' @examples
@@ -142,7 +140,7 @@ sanitize_path <- function(p, repo_wd) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file
 ##' writeLines("Hello world!", file.path(path, "file-to-remove.txt"))
@@ -164,17 +162,19 @@ rm_file <- function(repo = ".", path = NULL) {
     repo <- lookup_repository(repo)
 
     if (length(path)) {
-        wd <- workdir(repo)
+        repo_wd <- workdir(repo)
+        repo_wd <- normalizePath(workdir(repo), winslash = "/")
+        path <- vapply(path, sanitize_path, character(1), repo_wd = repo_wd)
 
         ## Check that files exists and are known to Git
-        if (!all(file.exists(file.path(wd, path)))) {
+        if (!all(file.exists(file.path(repo_wd, path)))) {
             stop(sprintf("pathspec '%s' did not match any files. ",
-                         path[!file.exists(file.path(wd, path))]))
+                         path[!file.exists(file.path(repo_wd, path))]))
         }
 
-        if (any(file.info(file.path(wd, path))$isdir)) {
+        if (any(file.info(file.path(repo_wd, path))$isdir)) {
             stop(sprintf("pathspec '%s' did not match any files. ",
-                         path[exists(file.path(wd, path))]))
+                         path[exists(file.path(repo_wd, path))]))
         }
 
         s <- status(repo, staged = TRUE, unstaged = TRUE,
@@ -196,7 +196,7 @@ rm_file <- function(repo = ".", path = NULL) {
 
         ## Remove and stage files
         lapply(path, function(x) {
-            file.remove(file.path(wd, x))
+            file.remove(file.path(repo_wd, x))
             .Call(git2r_index_remove_bypath, repo, x)
         })
     }
@@ -223,7 +223,7 @@ rm_file <- function(repo = ".", path = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file
 ##' writeLines("Hello world!", file.path(path, "file-to-remove.txt"))

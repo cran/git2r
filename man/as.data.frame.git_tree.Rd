@@ -21,19 +21,19 @@ The entries in a tree are coerced to a \code{data.frame}
 The \code{data.frame} have the following columns:
 \describe{
 
-\item{filemode}{
+  \item{filemode}{
     The UNIX file attributes of a tree entry
   }
 
-\item{type}{
+  \item{type}{
     String representation of the tree entry type
   }
 
-\item{sha}{
+  \item{sha}{
     The sha of a tree entry
   }
 
-\item{name}{
+  \item{name}{
     The filename of a tree entry
   }
 
@@ -48,7 +48,7 @@ dir.create(file.path(path, "subfolder"))
 repo <- init(path)
 
 ## Create a user
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create three files and commit
 writeLines("First file",  file.path(path, "example-1.txt"))
@@ -61,7 +61,7 @@ commit(repo, "Commit message")
 tree(last_commit(repo))
 
 ## Coerce tree to a data.frame
-df <- as(tree(last_commit(repo)), "data.frame")
+df <- as.data.frame(tree(last_commit(repo)))
 df
 }
 }

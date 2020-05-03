@@ -24,7 +24,7 @@ Get HEAD for a repository
 path <- tempfile(pattern="git2r-")
 dir.create(path)
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file, add and commit
 writeLines("Hello world!", file.path(path, "example.txt"))
@@ -32,6 +32,6 @@ add(repo, "example.txt")
 commit(repo, "Commit message")
 
 ## Get HEAD of repository
-head(repo)
+repository_head(repo)
 }
 }

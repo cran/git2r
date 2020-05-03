@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -59,7 +59,7 @@ stash_object <- function(object) {
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' # Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test.txt"))
@@ -115,7 +115,7 @@ stash_apply <- function(object = ".", index = 1) {
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' # Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test.txt"))
@@ -172,7 +172,7 @@ stash_drop <- function(object = ".", index = 1) {
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' # Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test.txt"))
@@ -199,8 +199,7 @@ stash <- function(repo = ".",
                   index     = FALSE,
                   untracked = FALSE,
                   ignored   = FALSE,
-                  stasher   = NULL)
-{
+                  stasher   = NULL) {
     repo <- lookup_repository(repo)
     if (is.null(stasher))
         stasher <- default_signature(repo)
@@ -220,7 +219,7 @@ stash <- function(repo = ".",
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' # Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test-1.txt"))
@@ -273,7 +272,7 @@ stash_list <- function(repo = ".") {
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' # Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test.txt"))
@@ -336,7 +335,7 @@ print.git_stash <- function(x, ...) {
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' # Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test.txt"))

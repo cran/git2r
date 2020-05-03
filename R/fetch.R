@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -69,8 +69,8 @@
 ##' repo_1 <- clone(path_bare, path_repo_1)
 ##' repo_2 <- clone(path_bare, path_repo_2)
 ##'
-##' config(repo_1, user.name="Alice", user.email="alice@@example.org")
-##' config(repo_2, user.name="Bob", user.email="bob@@example.org")
+##' config(repo_1, user.name = "Alice", user.email = "alice@@example.org")
+##' config(repo_2, user.name = "Bob", user.email = "bob@@example.org")
 ##'
 ##' ## Add changes to repo 1
 ##' writeLines("Lorem ipsum dolor sit amet",
@@ -95,8 +95,7 @@
 ##' summary(repo)
 ##' }
 fetch <- function(repo = ".", name = NULL, credentials = NULL,
-                  verbose = TRUE, refspec = NULL)
-{
+                  verbose = TRUE, refspec = NULL) {
     invisible(.Call(git2r_remote_fetch, lookup_repository(repo),
                     name, credentials, "fetch", verbose, refspec))
 }
@@ -122,8 +121,8 @@ fetch <- function(repo = ".", name = NULL, credentials = NULL,
 ##' repo_1 <- clone(path_bare, path_repo_1)
 ##' repo_2 <- clone(path_bare, path_repo_2)
 ##'
-##' config(repo_1, user.name="Alice", user.email="alice@@example.org")
-##' config(repo_2, user.name="Bob", user.email="bob@@example.org")
+##' config(repo_1, user.name = "Alice", user.email = "alice@@example.org")
+##' config(repo_2, user.name = "Bob", user.email = "bob@@example.org")
 ##'
 ##' ## Add changes to repo 1
 ##' writeLines("Lorem ipsum dolor sit amet",

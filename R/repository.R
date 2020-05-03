@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -59,7 +59,7 @@
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create three files and commit
 ##' writeLines("First file",  file.path(path, "example-1.txt"))
@@ -73,7 +73,7 @@
 ##' commit(repo, "Commit third file")
 ##'
 ##' ## Coerce commits to a data.frame
-##' df <- as(repo, "data.frame")
+##' df <- as.data.frame(repo)
 ##' df
 ##' }
 as.data.frame.git_repository <- function(x, ...) {
@@ -99,7 +99,7 @@ as.data.frame.git_repository <- function(x, ...) {
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test-1.txt"))
@@ -107,12 +107,14 @@ as.data.frame.git_repository <- function(x, ...) {
 ##' commit_1 <- commit(repo, "Commit message")
 ##'
 ##' ## Make one more commit
-##' writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "test-1.txt"))
+##' writeLines(c("Hello world!", "HELLO WORLD!"),
+##'            file.path(path, "test-1.txt"))
 ##' add(repo, 'test-1.txt')
 ##' commit(repo, "Next commit message")
 ##'
 ##' ## Create one more file
-##' writeLines("Hello world!", file.path(path, "test-2.txt"))
+##' writeLines("Hello world!",
+##'            file.path(path, "test-2.txt"))
 ##'
 ##' ## Brief summary of repository
 ##' repo
@@ -226,26 +228,29 @@ init <- function(path = ".", bare = FALSE) {
 ##' repo_1 <- init(path_repo_1)
 ##'
 ##' ## Config user and commit a file
-##' config(repo_1, user.name="Alice", user.email="alice@@example.org")
+##' config(repo_1, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo_1, "example.txt"))
+##' writeLines(
+##'     "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'     file.path(path_repo_1, "example.txt"))
 ##' add(repo_1, "example.txt")
 ##' commit(repo_1, "First commit message")
 ##'
 ##' ## Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'            file.path(path_repo_1, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path_repo_1, "example.txt"))
 ##' add(repo_1, "example.txt")
 ##' commit(repo_1, "Second commit message")
 ##'
 ##' ## Change file again and commit.
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
-##'              "minim veniam, quis nostrud exercitation ullamco laboris nisi ut"),
-##'            file.path(path_repo_1, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
+##'   "minim veniam, quis nostrud exercitation ullamco laboris nisi ut")
+##' writeLines(lines, file.path(path_repo_1, "example.txt"))
 ##' add(repo_1, "example.txt")
 ##' commit(repo_1, "Third commit message")
 ##'
@@ -262,8 +267,7 @@ clone <- function(url         = NULL,
                   branch      = NULL,
                   checkout    = TRUE,
                   credentials = NULL,
-                  progress    = TRUE)
-{
+                  progress    = TRUE) {
     .Call(git2r_clone, url, local_path, bare,
           branch, checkout, credentials, progress)
     repository(local_path)
@@ -283,7 +287,7 @@ clone <- function(url         = NULL,
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -291,7 +295,7 @@ clone <- function(url         = NULL,
 ##' commit(repo, "Commit message")
 ##'
 ##' ## Get HEAD of repository
-##' head(repo)
+##' repository_head(repo)
 ##' }
 head.git_repository <- function(x, ...) {
     .Deprecated("repository_head")
@@ -313,7 +317,7 @@ utils::head
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -363,18 +367,19 @@ is_bare <- function(repo = ".") {
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit_1 <- commit(repo, "Commit message 1")
 ##'
 ##' ## Change file, add and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'              file.path(path, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "Commit message 2")
 ##'
@@ -404,7 +409,7 @@ is_detached <- function(repo = ".") {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Check if it's an empty repository
 ##' is_empty(repo)
@@ -436,7 +441,7 @@ is_empty <- function(repo = ".") {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Check if path is in a git repository
 ##' in_repository(path)
@@ -464,26 +469,28 @@ in_repository <- function(path = ".") {
 ##' repo_1 <- init(path_repo_1)
 ##'
 ##' ## Config user and commit a file
-##' config(repo_1, user.name="Alice", user.email="alice@@example.org")
+##' config(repo_1, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo_1, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo_1, "example.txt"))
 ##' add(repo_1, "example.txt")
 ##' commit(repo_1, "First commit message")
 ##'
 ##' ## Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'            file.path(path_repo_1, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path_repo_1, "example.txt"))
 ##' add(repo_1, "example.txt")
 ##' commit(repo_1, "Second commit message")
 ##'
 ##' ## Change file again and commit.
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
-##'              "minim veniam, quis nostrud exercitation ullamco laboris nisi ut"),
-##'            file.path(path_repo_1, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
+##'   "minim veniam, quis nostrud exercitation ullamco laboris nisi ut")
+##' writeLines(lines, file.path(path_repo_1, "example.txt"))
 ##' add(repo_1, "example.txt")
 ##' commit(repo_1, "Third commit message")
 ##'
@@ -514,9 +521,9 @@ is_shallow <- function(repo = ".") {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit_1 <- commit(repo, "First commit message")
 ##'
@@ -524,10 +531,10 @@ is_shallow <- function(repo = ".") {
 ##' tag(repo, "Tagname", "Tag message")
 ##'
 ##' ## First, get SHAs to lookup in the repository
-##' sha_commit <- commit_1@@sha
-##' sha_tree <- tree(commit_1)@@sha
-##' sha_blob <- tree(commit_1)["example.txt"]$sha
-##' sha_tag <- tags(repo)[[1]]@@sha
+##' sha_commit <- sha(commit_1)
+##' sha_tree <- sha(tree(commit_1))
+##' sha_blob <- sha(tree(commit_1)["example.txt"])
+##' sha_tag <- sha(tags(repo)[[1]])
 ##'
 ##' ## SHAs
 ##' sha_commit
@@ -565,11 +572,11 @@ lookup <- function(repo = ".", sha = NULL) {
 ##'
 ##' ## Initialize a repository
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            con = file.path(path, "test.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, con = file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit(repo, "Commit message 1")
 ##'
@@ -661,7 +668,7 @@ print.git_repository <- function(x, ...) {
 ##' repo <- init(path)
 ##'
 ##' ## Config user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file
 ##' writeLines("Hello world!", file.path(path, "test.txt"))
@@ -691,7 +698,8 @@ summary.git_repository <- function(object, ...) {
 
     n_branches <- sum(!is.na(unique(sapply(branches(object),
                                            branch_target))))
-    n_tags <- sum(!is.na(unique(vapply(tags(object), "[[", character(1), "sha"))))
+    n_tags <- sum(!is.na(unique(vapply(tags(object), "[[",
+                                       character(1), "sha"))))
 
     work <- commits(object)
     n_commits <- length(work)
@@ -784,9 +792,9 @@ workdir <- function(repo = ".") {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example-1.txt"))
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example-1.txt"))
 ##' add(repo, "example-1.txt")
 ##' commit(repo, "First commit message")
 ##'

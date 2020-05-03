@@ -4,8 +4,14 @@
 \alias{note_create}
 \title{Add note for a object}
 \usage{
-note_create(object = NULL, message = NULL, ref = NULL,
-  author = NULL, committer = NULL, force = FALSE)
+note_create(
+  object = NULL,
+  message = NULL,
+  ref = NULL,
+  author = NULL,
+  committer = NULL,
+  force = FALSE
+)
 }
 \arguments{
 \item{object}{The object to annotate (git_blob, git_commit or
@@ -34,7 +40,7 @@ Add note for a object
 path <- tempfile(pattern="git2r-")
 dir.create(path)
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file, add and commit
 writeLines("Hello world!", file.path(path, "example.txt"))

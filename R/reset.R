@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -42,24 +42,24 @@
 ##' repo <- init(path)
 ##'
 ##' # Configure a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "test-1.txt"))
-##' add(repo, 'test-1.txt')
+##' add(repo, "test-1.txt")
 ##' commit_1 <- commit(repo, "Commit message")
 ##'
 ##' ## Change and stage the file
 ##' writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "test-1.txt"))
-##' add(repo, 'test-1.txt')
+##' add(repo, "test-1.txt")
 ##' status(repo)
 ##'
 ##' ## Unstage file
-##' reset(repo, 'test-1.txt')
+##' reset(repo, path = "test-1.txt")
 ##' status(repo)
 ##'
 ##' ## Make one more commit
-##' add(repo, 'test-1.txt')
+##' add(repo, "test-1.txt")
 ##' commit(repo, "Next commit message")
 ##'
 ##' ## Create one more file
@@ -75,12 +75,14 @@
 ##' status(repo)
 ##'
 ##' ## 'hard' reset to first commit and check status
-##' add(repo, 'test-1.txt')
+##' add(repo, "test-1.txt")
 ##' commit(repo, "Next commit message")
 ##' reset(commit_1, "hard")
 ##' status(repo)
 ##' }
-reset <- function(object, reset_type = c("soft", "mixed", "hard"), path = NULL) {
+reset <- function(object,
+                  reset_type = c("soft", "mixed", "hard"),
+                  path = NULL) {
     if (is_commit(object)) {
         reset_type <- switch(match.arg(reset_type),
                              soft  = 1L,

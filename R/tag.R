@@ -34,7 +34,7 @@
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' filename <- file.path(path, "example.txt")
@@ -64,8 +64,7 @@ tag <- function(object = ".",
                 message = NULL,
                 session = FALSE,
                 tagger  = NULL,
-                force   = FALSE)
-{
+                force   = FALSE) {
     object <- lookup_repository(object)
 
     if (isTRUE(session))
@@ -90,7 +89,7 @@ tag <- function(object = ".",
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -125,7 +124,7 @@ is_tag <- function(object) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -171,7 +170,7 @@ tag_delete <- function(object = ".", name = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -190,7 +189,7 @@ tags <- function(repo = ".") {
 
 ##' @export
 format.git_tag <- function(x, ...) {
-    sprintf("[%s] %s", substr(x$target, 1 , 6), x$name)
+    sprintf("[%s] %s", substr(x$target, 1, 6), x$name)
 }
 
 ##' @export

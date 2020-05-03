@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -20,18 +20,18 @@ library("git2r")
 sessionInfo()
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
 
 ## Config repository
-config(repo, user.name="Alice")
+config(repo, user.name = "Alice")
 
 ## Let's set one valid and one with variable with invalid format
 res <- tools::assertWarning(config(repo,
-                                   user.email="alice@example.org",
+                                   user.email = "alice@example.org",
                                    lol = "wut"))
 stopifnot(length(grep("Variable was not in a valid format: 'lol'",
                       res[[1]]$message)) > 0)
@@ -46,4 +46,4 @@ cfg_obs <- cfg_obs[c("user.name", "user.email", "lol")]
 stopifnot(identical(cfg_obs, cfg_exp))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

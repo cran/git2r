@@ -55,11 +55,11 @@ get_upstream_name <- function(object) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -76,9 +76,10 @@ get_upstream_name <- function(object) {
 ##' branch_get_upstream(repository_head(repo))
 ##'
 ##' ## Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'            file.path(path_repo, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "Second commit message")
 ##'
@@ -94,8 +95,7 @@ push <- function(object       = ".",
                  refspec      = NULL,
                  force        = FALSE,
                  credentials  = NULL,
-                 set_upstream = FALSE)
-{
+                 set_upstream = FALSE) {
     if (is_branch(object)) {
         name <- get_upstream_name(object)
 

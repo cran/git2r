@@ -33,19 +33,20 @@
 ##'
 ##' ## Initialize a repository
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            con = file.path(path, "test.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_1 <- commit(repo, "Commit message 1")
 ##' tag_1 <- tag(repo, "Tagname1", "Tag message 1")
 ##'
 ##' # Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'              con = file.path(path, "test.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_2 <- commit(repo, "Commit message 2")
 ##' tag_2 <- tag(repo, "Tagname2", "Tag message 2")
@@ -69,7 +70,7 @@ ahead_behind <- function(local = NULL, upstream = NULL) {
 add_session_info <- function(message) {
     paste0(message, "\n\nsessionInfo:\n",
            paste0(utils::capture.output(utils::sessionInfo()),
-                  collapse="\n"))
+                  collapse = "\n"))
 }
 
 ##' Commit
@@ -114,11 +115,11 @@ add_session_info <- function(message) {
 ##' repo <- init(path)
 ##'
 ##' ## Config user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##' }
@@ -127,8 +128,7 @@ commit <- function(repo      = ".",
                    all       = FALSE,
                    session   = FALSE,
                    author    = NULL,
-                   committer = NULL)
-{
+                   committer = NULL) {
     repo <- lookup_repository(repo)
     if (is.null(author))
         author <- default_signature(repo)
@@ -166,6 +166,50 @@ commit <- function(repo      = ".",
     .Call(git2r_commit, repo, message, author, committer)
 }
 
+##' Check limit in number of commits
+##' @noRd
+get_upper_limit_of_commits <- function(n) {
+    if (is.null(n)) {
+        n <- -1L
+    } else if (is.numeric(n)) {
+        if (!identical(length(n), 1L))
+            stop("'n' must be integer")
+        if (abs(n - round(n)) >= .Machine$double.eps^0.5)
+            stop("'n' must be integer")
+        n <- as.integer(n)
+    } else {
+        stop("'n' must be integer")
+    }
+
+    n
+}
+
+shallow_commits <- function(repo, sha, n) {
+    ## List to hold result
+    result <- list()
+
+    ## Get latest commit
+    x <- lookup(repo, sha)
+
+    ## Repeat until no more parent commits
+    repeat {
+        if (n == 0) {
+            break
+        } else if (n > 0) {
+            n <- n - 1
+        }
+
+        if (is.null(x))
+            break
+        result[[length(result) + 1]] <- x
+
+        ## Get parent to commit
+        x <- tryCatch(parents(x)[[1]], error = function(e) NULL)
+    }
+
+    result
+}
+
 ##' Commits
 ##'
 ##' @template repo-param
@@ -195,18 +239,19 @@ commit <- function(repo      = ".",
 ##' repo <- init(path)
 ##'
 ##' ## Config user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
 ##' ## Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'            file.path(path, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "Second commit message")
 ##'
@@ -214,10 +259,11 @@ commit <- function(repo      = ".",
 ##' tag(repo, "Tagname", "Tag message")
 ##'
 ##' ## Change file again and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
-##'              "minim veniam, quis nostrud exercitation ullamco laboris nisi ut"),
-##'            file.path(path, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
+##'   "minim veniam, quis nostrud exercitation ullamco laboris nisi ut")
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "Third commit message")
 ##'
@@ -242,9 +288,10 @@ commit <- function(repo      = ".",
 ##' checkout(repo, "dev", create = TRUE)
 ##'
 ##' ## Add changes to the 'dev' branch
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'            file.path(path, "example.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "Commit message in dev branch")
 ##'
@@ -259,20 +306,9 @@ commits <- function(repo        = ".",
                     reverse     = FALSE,
                     n           = NULL,
                     ref         = NULL,
-                    path        = NULL)
-{
+                    path        = NULL) {
     ## Check limit in number of commits
-    if (is.null(n)) {
-        n <- -1L
-    } else if (is.numeric(n)) {
-        if (!identical(length(n), 1L))
-            stop("'n' must be integer")
-        if (abs(n - round(n)) >= .Machine$double.eps^0.5)
-            stop("'n' must be integer")
-        n <- as.integer(n)
-    } else {
-        stop("'n' must be integer")
-    }
+    n <- get_upper_limit_of_commits(n)
 
     if (!is.null(path)) {
         if (!(is.character(path) && length(path) == 1)) {
@@ -294,49 +330,15 @@ commits <- function(repo        = ".",
         ## FIXME: Remove this if-statement when libgit2 supports
         ## shallow clones, see #219.  Note: This workaround does not
         ## use the 'topological', 'time' and 'reverse' flags.
-
-        ## List to hold result
-        result <- list()
-
-        ## Get latest commit
-        x <- lookup(repo, sha)
-
-        ## Repeat until no more parent commits
-        repeat {
-            if (n == 0) {
-                break
-            } else if (n > 0) {
-                n <- n - 1
-            }
-
-            if (is.null(x))
-                break
-            result[[length(result) + 1]] <- x
-
-            ## Get parent to commit
-            x <- tryCatch(parents(x)[[1]], error = function(e) NULL)
-        }
-
-        return(result)
+        return(shallow_commits(repo, sha, n))
     }
 
     if (!is.null(path)) {
         repo_wd <- normalizePath(workdir(repo), winslash = "/")
-        if (!length(grep("/$", repo_wd)))
-            repo_wd <- paste0(repo_wd, "/")
         path <- sanitize_path(path, repo_wd)
         path_revwalk <- .Call(git2r_revwalk_list2, repo, sha, topological,
-                              time, reverse, path)
-        path_commits <- vapply(path_revwalk, function(x) !is.null(x),
-                               logical(1))
-
-        if (n == -1L) {
-            max_n <- sum(path_commits)
-        } else {
-            max_n <- n
-        }
-
-        return(path_revwalk[path_commits][seq_len(max_n)])
+                              time, reverse, n, path)
+        return(path_revwalk[!vapply(path_revwalk, is.null, logical(1))])
     }
 
     .Call(git2r_revwalk_list, repo, sha, topological, time, reverse, n)
@@ -355,11 +357,11 @@ commits <- function(repo        = ".",
 ##' repo <- init(path)
 ##'
 ##' ## Config user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -397,19 +399,20 @@ last_commit <- function(repo = ".") {
 ##'
 ##' ## Initialize a repository
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            con = file.path(path, "test.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_1 <- commit(repo, "Commit message 1")
 ##' tag_1 <- tag(repo, "Tagname1", "Tag message 1")
 ##'
 ##' # Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'              con = file.path(path, "test.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit_2 <- commit(repo, "Commit message 2")
 ##' tag_2 <- tag(repo, "Tagname2", "Tag message 2")
@@ -438,7 +441,7 @@ descendant_of <- function(commit = NULL, ancestor = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -467,7 +470,7 @@ is_commit <- function(object) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##' writeLines(c("First line in file 1.", "Second line in file 1."),
 ##'            file.path(path, "example-1.txt"))
 ##' add(repo, "example-1.txt")
@@ -523,7 +526,7 @@ is_merge <- function(commit = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##' writeLines("First line.",
 ##'            file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
@@ -569,7 +572,7 @@ summary.git_commit <- function(object, ...) {
     if (is_merge_commit) {
         sha <- vapply(po, "[[", character(1), "sha")
         cat(sprintf("Merge:   %s\n", sha[1]))
-        cat(paste0("         ", sha[-1]), sep="\n")
+        cat(paste0("         ", sha[-1]), sep = "\n")
     }
 
     cat(sprintf(paste0("Author:  %s <%s>\n",
@@ -600,9 +603,10 @@ summary.git_commit <- function(object, ...) {
                 cat("1 file changed, ")
             }
 
-            cat(sprintf("%i insertions, %i deletions\n",
-                        sum(vapply(lines_per_file(df), "[[", numeric(1), "add")),
-                        sum(vapply(lines_per_file(df), "[[", numeric(1), "del"))))
+            cat(sprintf(
+                "%i insertions, %i deletions\n",
+                sum(vapply(lines_per_file(df), "[[", numeric(1), "add")),
+                sum(vapply(lines_per_file(df), "[[", numeric(1), "del"))))
 
             plpf <- print_lines_per_file(df)
             hpf <- hunks_per_file(df)
@@ -610,7 +614,7 @@ summary.git_commit <- function(object, ...) {
                         ifelse(hpf > 0, " hunk",
                                " hunk (binary file)"))
             phpf <- paste0("  in ", format(hpf), hunk_txt)
-            cat(paste0(plpf, phpf), sep="\n")
+            cat(paste0(plpf, phpf), sep = "\n")
         }
 
         cat("\n")

@@ -21,27 +21,27 @@ The commits in the repository are coerced to a \code{data.frame}
 The \code{data.frame} have the following columns:
 \describe{
 
-\item{sha}{
+  \item{sha}{
     The 40 character hexadecimal string of the SHA-1
   }
 
-\item{summary}{
+  \item{summary}{
     the short "summary" of the git commit message.
   }
 
-\item{message}{
+  \item{message}{
     the full message of a commit
   }
 
-\item{author}{
+  \item{author}{
     full name of the author
   }
 
-\item{email}{
+  \item{email}{
     email of the author
   }
 
-\item{when}{
+  \item{when}{
     time when the commit happened
   }
 
@@ -55,7 +55,7 @@ dir.create(path)
 repo <- init(path)
 
 ## Create a user
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create three files and commit
 writeLines("First file",  file.path(path, "example-1.txt"))
@@ -69,7 +69,7 @@ add(repo, "example-3.txt")
 commit(repo, "Commit third file")
 
 ## Coerce commits to a data.frame
-df <- as(repo, "data.frame")
+df <- as.data.frame(repo)
 df
 }
 }

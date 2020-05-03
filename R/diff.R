@@ -60,7 +60,7 @@ lines_per_file <- function(diff) {
                 }
             }
         }
-        list(file=x$new_file, del=del, add=add)
+        list(file = x$new_file, del = del, add = add)
     })
 }
 
@@ -86,7 +86,7 @@ summary.git_diff <- function(object, ...) {
                     ifelse(hpf > 0, " hunk",
                            " hunk (binary file)"))
         phpf <- paste0("  in ", format(hpf), hunk_txt)
-        cat("Summary:", paste0(plpf, phpf), sep="\n")
+        cat("Summary:", paste0(plpf, phpf), sep = "\n")
     } else {
         cat("No changes.\n")
     }
@@ -141,7 +141,7 @@ summary.git_diff <- function(object, ...) {
 ##' repo <- init(path)
 ##'
 ##' ## Config user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add, commit
 ##' writeLines("Hello world!", file.path(path, "test.txt"))
@@ -206,8 +206,7 @@ diff.git_repository <- function(x,
                                 id_abbrev = NULL,
                                 path = NULL,
                                 max_size = NULL,
-                                ...)
-{
+                                ...) {
     if (as_char) {
         ## Make sure filename is character(0) to write to a
         ## character vector or a character vector with path in
@@ -253,8 +252,7 @@ diff.git_tree <- function(x,
                           id_abbrev = NULL,
                           path = NULL,
                           max_size = NULL,
-                          ...)
-{
+                          ...) {
     if (as_char) {
         ## Make sure filename is character(0) to write to a character
         ## vector or a character vector with path in order to write to

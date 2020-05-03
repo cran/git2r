@@ -5,15 +5,36 @@
 \alias{diff.git_tree}
 \title{Changes between commits, trees, working tree, etc.}
 \usage{
-\method{diff}{git_repository}(x, index = FALSE, as_char = FALSE,
-  filename = NULL, context_lines = 3, interhunk_lines = 0,
-  old_prefix = "a", new_prefix = "b", id_abbrev = NULL,
-  path = NULL, max_size = NULL, ...)
+\method{diff}{git_repository}(
+  x,
+  index = FALSE,
+  as_char = FALSE,
+  filename = NULL,
+  context_lines = 3,
+  interhunk_lines = 0,
+  old_prefix = "a",
+  new_prefix = "b",
+  id_abbrev = NULL,
+  path = NULL,
+  max_size = NULL,
+  ...
+)
 
-\method{diff}{git_tree}(x, new_tree = NULL, index = FALSE,
-  as_char = FALSE, filename = NULL, context_lines = 3,
-  interhunk_lines = 0, old_prefix = "a", new_prefix = "b",
-  id_abbrev = NULL, path = NULL, max_size = NULL, ...)
+\method{diff}{git_tree}(
+  x,
+  new_tree = NULL,
+  index = FALSE,
+  as_char = FALSE,
+  filename = NULL,
+  context_lines = 3,
+  interhunk_lines = 0,
+  old_prefix = "a",
+  new_prefix = "b",
+  id_abbrev = NULL,
+  path = NULL,
+  max_size = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{A \code{git_repository} object or the old \code{git_tree}
@@ -83,7 +104,7 @@ dir.create(path)
 repo <- init(path)
 
 ## Config user
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file, add, commit
 writeLines("Hello world!", file.path(path, "test.txt"))

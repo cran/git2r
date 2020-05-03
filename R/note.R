@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -27,7 +27,7 @@
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## View default notes reference
 ##' note_default_ref(repo)
@@ -54,7 +54,7 @@ note_default_ref <- function(repo = ".") {
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -87,8 +87,7 @@ note_create <- function(object    = NULL,
                         ref       = NULL,
                         author    = NULL,
                         committer = NULL,
-                        force     = FALSE)
-{
+                        force     = FALSE) {
     if (is.null(object))
         stop("'object' is missing")
     if (!any(is_blob(object), is_commit(object), is_tree(object)))
@@ -101,7 +100,7 @@ note_create <- function(object    = NULL,
     stopifnot(is.character(ref), identical(length(ref), 1L))
     if (!length(grep("^refs/notes/", ref)))
         ref <- paste0("refs/notes/", ref)
-    if(is.null(author))
+    if (is.null(author))
         author <- default_signature(repo)
     if (is.null(committer))
         committer <- default_signature(repo)
@@ -122,7 +121,7 @@ note_create <- function(object    = NULL,
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -157,7 +156,7 @@ note_create <- function(object    = NULL,
 notes <- function(repo = ".", ref = NULL) {
     repo <- lookup_repository(repo)
     if (is.null(ref))
-        ref = note_default_ref(repo)
+        ref <- note_default_ref(repo)
     stopifnot(is.character(ref), identical(length(ref), 1L))
     if (!length(grep("^refs/notes/", ref)))
         ref <- paste0("refs/notes/", ref)
@@ -177,7 +176,7 @@ notes <- function(repo = ".", ref = NULL) {
 ##' path <- tempfile(pattern="git2r-")
 ##' dir.create(path)
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
@@ -209,8 +208,7 @@ notes <- function(repo = ".", ref = NULL) {
 ##' }
 note_remove <- function(note      = NULL,
                         author    = NULL,
-                        committer = NULL)
-{
+                        committer = NULL) {
     if (!inherits(note, "git_note"))
         stop("'note' is not a git_note")
     if (is.null(author))

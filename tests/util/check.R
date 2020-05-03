@@ -14,33 +14,17 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+empty_named_list <- function() {
+    structure(list(), .Names = character(0))
+}
 
-## For debugging
-sessionInfo()
+## Raise an error if the error message doesn't match.
+check_error <- function(current, target, exact = FALSE) {
+    if (isTRUE(exact)) {
+        stopifnot(identical(current[[1]]$message, target))
+    } else {
+        stopifnot(length(grep(target, current[[1]]$message)) > 0)
+    }
 
-## Create a directory in tempdir
-path <- tempfile(pattern = "git2r-")
-dir.create(path)
-
-## Initialize a repository
-repo <- init(path)
-config(repo, user.name = "Alice", user.email = "alice@example.org")
-
-## Add files
-invisible(lapply(file.path(path, letters[1:4]), writeLines, text = ""))
-add(repo, letters)
-commit(repo, "init")
-
-## Remove one file
-rm_file(repo, letters[1])
-commit(repo, "remove")
-
-## Remove two files. Don't raise warnings
-withCallingHandlers(rm_file(repo, letters[2:3]), warning = function(w) stop(w))
-
-## Remove one file using the absolute path to the file.
-rm_file(repo, file.path(path, letters[4]))
-
-## Cleanup
-unlink(path, recursive = TRUE)
+    invisible(NULL)
+}

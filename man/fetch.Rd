@@ -4,8 +4,13 @@
 \alias{fetch}
 \title{Fetch new data and update tips}
 \usage{
-fetch(repo = ".", name = NULL, credentials = NULL, verbose = TRUE,
-  refspec = NULL)
+fetch(
+  repo = ".",
+  name = NULL,
+  credentials = NULL,
+  verbose = TRUE,
+  refspec = NULL
+)
 }
 \arguments{
 \item{repo}{a path to a repository or a \code{git_repository}
@@ -71,8 +76,8 @@ bare_repo <- init(path_bare, bare = TRUE)
 repo_1 <- clone(path_bare, path_repo_1)
 repo_2 <- clone(path_bare, path_repo_2)
 
-config(repo_1, user.name="Alice", user.email="alice@example.org")
-config(repo_2, user.name="Bob", user.email="bob@example.org")
+config(repo_1, user.name = "Alice", user.email = "alice@example.org")
+config(repo_2, user.name = "Bob", user.email = "bob@example.org")
 
 ## Add changes to repo 1
 writeLines("Lorem ipsum dolor sit amet",

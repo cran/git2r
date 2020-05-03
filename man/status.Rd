@@ -4,8 +4,14 @@
 \alias{status}
 \title{Status}
 \usage{
-status(repo = ".", staged = TRUE, unstaged = TRUE,
-  untracked = TRUE, ignored = FALSE, all_untracked = FALSE)
+status(
+  repo = ".",
+  staged = TRUE,
+  unstaged = TRUE,
+  untracked = TRUE,
+  ignored = FALSE,
+  all_untracked = FALSE
+)
 }
 \arguments{
 \item{repo}{a path to a repository or a \code{git_repository}
@@ -38,7 +44,7 @@ dir.create(path)
 repo <- init(path)
 
 ## Config user
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file
 writeLines("Hello world!", file.path(path, "test.txt"))

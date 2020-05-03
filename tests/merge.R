@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,18 +14,19 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+library(git2r)
+source("util/check.R")
 
 ## For debugging
 sessionInfo()
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file, add and commit
 writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
@@ -57,7 +58,7 @@ stopifnot(identical(merge_base(commit_2, commit_3), commit_1))
 
 ## Checkout master
 b <- branches(repo)
-checkout(b[sapply(b, "[", "name") == "master"][[1]], force=TRUE)
+checkout(b[sapply(b, "[", "name") == "master"][[1]], force = TRUE)
 
 ## Merge branch 1
 m_1 <- merge(b[sapply(b, "[", "name") == "branch1"][[1]])
@@ -91,7 +92,7 @@ commit(repo, "Commit message branch 3")
 ## Checkout master and create a change that creates a conflict on
 ## merge
 b <- branches(repo)
-checkout(b[sapply(b, "[", "name") == "master"][[1]], force=TRUE)
+checkout(b[sapply(b, "[", "name") == "master"][[1]], force = TRUE)
 writeLines(c("Lorem ipsum dolor sit amet, adipisicing consectetur elit, sed do",
              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
            con = file.path(path, "test.txt"))
@@ -107,10 +108,9 @@ stopifnot(identical(sha(m_3), NA_character_))
 m_3
 
 ## Check status; Expect to have a clean working directory
-wd <- structure(list(staged = structure(list(), .Names = character(0)),
-                     unstaged = structure(list(), .Names = character(0)),
-                     untracked = structure(list(), .Names = character(0))),
-                .Names = c("staged", "unstaged", "untracked"),
+wd <- structure(list(staged = empty_named_list(),
+                     unstaged = empty_named_list(),
+                     untracked = empty_named_list()),
                 class = "git_status")
 stopifnot(identical(status(repo), wd))
 
@@ -124,14 +124,10 @@ m_3
 
 ## Check status; Expect to have one unstaged unmerged conflict.
 stopifnot(identical(status(repo),
-                    structure(list(staged = structure(list(),
-                                       .Names = character(0)),
-                                   unstaged = structure(list(conflicted = "test.txt"),
-                                       .Names = "conflicted"),
-                                   untracked = structure(list(),
-                                       .Names = character(0))),
-                              .Names = c("staged", "unstaged", "untracked"),
+                    structure(list(staged = empty_named_list(),
+                                   unstaged = list(conflicted = "test.txt"),
+                                   untracked = empty_named_list()),
                               class = "git_status")))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

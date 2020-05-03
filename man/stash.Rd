@@ -4,8 +4,14 @@
 \alias{stash}
 \title{Stash}
 \usage{
-stash(repo = ".", message = as.character(Sys.time()), index = FALSE,
-  untracked = FALSE, ignored = FALSE, stasher = NULL)
+stash(
+  repo = ".",
+  message = as.character(Sys.time()),
+  index = FALSE,
+  untracked = FALSE,
+  ignored = FALSE,
+  stasher = NULL
+)
 }
 \arguments{
 \item{repo}{a path to a repository or a \code{git_repository}
@@ -39,7 +45,7 @@ dir.create(path)
 repo <- init(path)
 
 # Configure a user
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 # Create a file, add and commit
 writeLines("Hello world!", file.path(path, "test.txt"))

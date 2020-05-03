@@ -39,24 +39,26 @@
 ##'
 ##' ## Initialize a repository
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            con = file.path(path, "test.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit(repo, "Commit message 1")
 ##'
 ##' ## Change file and commit
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'              con = file.path(path, "test.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit(repo, "Commit message 2")
 ##'
 ##' ## Commit same content under different name in a sub-directory
 ##' dir.create(file.path(path, "sub-directory"))
-##' file.copy(file.path(path, "test.txt"), file.path(path, "sub-directory", "copy.txt"))
+##' file.copy(file.path(path, "test.txt"),
+##'           file.path(path, "sub-directory", "copy.txt"))
 ##' add(repo, "sub-directory/copy.txt")
 ##' commit(repo, "Commit message 3")
 ##'
@@ -66,11 +68,11 @@
 odb_blobs <- function(repo = ".") {
     blobs <- .Call(git2r_odb_blobs, lookup_repository(repo))
     blobs <- data.frame(blobs, stringsAsFactors = FALSE)
-    blobs <- blobs[order(blobs$when),]
+    blobs <- blobs[order(blobs$when), ]
     index <- paste0(blobs$sha, ":", blobs$path, "/", blobs$name)
-    blobs <- blobs[!duplicated(index),]
+    blobs <- blobs[!duplicated(index), ]
     rownames(blobs) <- NULL
-    blobs$when <- as.POSIXct(blobs$when, origin="1970-01-01", tz="GMT")
+    blobs$when <- as.POSIXct(blobs$when, origin = "1970-01-01", tz = "GMT")
     blobs
 }
 
@@ -91,11 +93,11 @@ odb_blobs <- function(repo = ".") {
 ##'
 ##' ## Initialize a repository
 ##' repo <- init(path)
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Create a file, add and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            con = file.path(path, "test.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "test.txt"))
 ##' add(repo, "test.txt")
 ##' commit(repo, "Commit message 1")
 ##'

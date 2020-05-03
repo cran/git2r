@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2020 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -16,7 +16,9 @@
 
 ##' Create a branch
 ##'
-##' @param commit Commit to which branch should point.
+##' @param commit Commit to which the branch should point. The default
+##'     is to use the \code{last_commit()} function to determine the
+##'     commit to which the branch should point.
 ##' @param name Name for the branch
 ##' @param force Overwrite existing branch. Default = FALSE
 ##' @return invisible git_branch object
@@ -29,8 +31,9 @@
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
-##' writeLines("Hello world!", file.path(path, "example.txt"))
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
+##' lines <- "Hello world!"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit_1 <- commit(repo, "First commit message")
 ##'
@@ -38,7 +41,8 @@
 ##' branch_1 <- branch_create(commit_1, name = "test-branch")
 ##'
 ##' ## Add one more commit
-##' writeLines(c("Hello world!", "HELLO WORLD!"), file.path(path, "example.txt"))
+##' lines <- c("Hello world!", "HELLO WORLD!")
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit_2 <- commit(repo, "Another commit message")
 ##'
@@ -48,7 +52,8 @@
 ##' ## Force it
 ##' branch_2 <- branch_create(commit_2, name = "test-branch", force = TRUE)
 ##' }
-branch_create <- function(commit = NULL, name = NULL, force = FALSE) {
+branch_create <- function(commit = last_commit(), name = NULL,
+                          force = FALSE) {
     invisible(.Call(git2r_branch_create, name, commit, force))
 }
 
@@ -65,7 +70,7 @@ branch_create <- function(commit = NULL, name = NULL, force = FALSE) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit_1 <- commit(repo, "First commit message")
@@ -100,11 +105,11 @@ branch_delete <- function(branch = NULL) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -135,11 +140,11 @@ branch_remote_name <- function(branch = NULL) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -169,9 +174,9 @@ branch_remote_url <- function(branch = NULL) {
 ##' repo <- init(path)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -197,9 +202,9 @@ branch_rename <- function(branch = NULL, name = NULL, force = FALSE) {
 ##' repo <- init(path)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path, "example.txt"))
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -228,11 +233,11 @@ branch_target <- function(branch = NULL) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -266,11 +271,11 @@ branch_get_upstream <- function(branch = NULL) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -313,11 +318,11 @@ branch_set_upstream <- function(branch = NULL, name) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config first user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -350,7 +355,7 @@ branches <- function(repo = ".", flags=c("all", "local", "remote")) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##' writeLines("Hello world!", file.path(path, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
@@ -391,11 +396,11 @@ is_head <- function(branch = NULL) {
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config first user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -422,7 +427,7 @@ is_local <- function(branch) {
 print.git_branch <- function(x, ...) {
     sha <- branch_target(x)
     if (!is.na(sha)) {
-        cat(sprintf("[%s] ", substr(sha, 1 , 6)))
+        cat(sprintf("[%s] ", substr(sha, 1, 6)))
     }
 
     if (is_local(x)) {
@@ -462,7 +467,7 @@ print.git_branch <- function(x, ...) {
 ##' repo <- init(path)
 ##'
 ##' ## Create a user
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Commit a text file
 ##' writeLines("Hello world!", file.path(path, "example.txt"))

@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -20,9 +20,9 @@ library("git2r")
 sessionInfo()
 
 ## Create 2 directories in tempdir
-path_bare <- tempfile(pattern="git2r-")
-path_repo_1 <- tempfile(pattern="git2r-")
-path_repo_2 <- tempfile(pattern="git2r-")
+path_bare <- tempfile(pattern = "git2r-")
+path_repo_1 <- tempfile(pattern = "git2r-")
+path_repo_2 <- tempfile(pattern = "git2r-")
 
 dir.create(path_bare)
 dir.create(path_repo_1)
@@ -34,8 +34,8 @@ repo_1 <- clone(path_bare, path_repo_1)
 repo_2 <- clone(path_bare, path_repo_2)
 
 ## Config repositories
-config(repo_1, user.name="Alice", user.email="alice@example.org")
-config(repo_2, user.name="Bob", user.email="bob@example.org")
+config(repo_1, user.name = "Alice", user.email = "alice@example.org")
+config(repo_2, user.name = "Bob", user.email = "bob@example.org")
 
 ## Add changes to repo 1
 writeLines("Hello world", con = file.path(path_repo_1, "test.txt"))
@@ -65,7 +65,8 @@ show(repo_2)
 
 ## Check that 'git2r_arg_check_credentials' raise error
 res <- tools::assertError(
-    .Call(git2r:::git2r_remote_fetch, repo_1, "origin", 3, "fetch", FALSE, NULL))
+                  .Call(git2r:::git2r_remote_fetch, repo_1, "origin",
+                        3, "fetch", FALSE, NULL))
 stopifnot(length(grep("'credentials' must be an S3 class with credentials",
                       res[[1]]$message)) > 0)
 
@@ -151,6 +152,6 @@ stopifnot(length(grep("'credentials' must be an S3 class with credentials",
                       res[[1]]$message)) > 0)
 
 ## Cleanup
-unlink(path_bare, recursive=TRUE)
-unlink(path_repo_1, recursive=TRUE)
-unlink(path_repo_2, recursive=TRUE)
+unlink(path_bare, recursive = TRUE)
+unlink(path_repo_1, recursive = TRUE)
+unlink(path_repo_2, recursive = TRUE)

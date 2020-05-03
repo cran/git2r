@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013 - 2018 The git2r contributors
+## Copyright (C) 2013 - 2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,13 +14,14 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+library(git2r)
+source("util/check.R")
 
 ## For debugging
 sessionInfo()
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## is_bare: "Invalid repository"
@@ -49,14 +50,14 @@ stopifnot(identical(print(repo), repo))
 stopifnot(identical(is_bare(repo), FALSE))
 stopifnot(identical(is_empty(repo), TRUE))
 stopifnot(identical(is_shallow(repo), FALSE))
-stopifnot(identical(branches(repo), structure(list(), .Names = character(0))))
-stopifnot(identical(references(repo), structure(list(), .Names = character(0))))
+stopifnot(identical(branches(repo), empty_named_list()))
+stopifnot(identical(references(repo), empty_named_list()))
 stopifnot(identical(commits(repo), list()))
 stopifnot(identical(repository_head(repo), NULL))
 
 # check that we can find repository from a path
 wd <- sub(paste0("[", .Platform$file.sep, "]$"), "",  workdir(repo))
-writeLines('test file', con = file.path(wd, "myfile.txt"))
+writeLines("test file", con = file.path(wd, "myfile.txt"))
 stopifnot(identical(discover_repository(file.path(wd, "myfile.txt")),
                     file.path(wd, ".git")))
 stopifnot(identical(discover_repository(file.path(wd, "doesntexist.txt")),
@@ -93,4 +94,4 @@ if (!is.null(wd))
     setwd(wd)
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

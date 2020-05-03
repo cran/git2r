@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -14,18 +14,20 @@
 ## with this program; if not, write to the Free Software Foundation, Inc.,
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-library("git2r")
+library(git2r)
+library(tools)
+source("util/check.R")
 
 ## For debugging
 sessionInfo()
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file
 f <- file(file.path(path, "test.txt"), "wb")
@@ -57,8 +59,8 @@ stopifnot(identical(content(blob),
 
 ## Check content of binary file
 set.seed(42)
-writeBin(as.raw((sample(0:255, 1000, replace=TRUE))),
-         con=file.path(path, "test.bin"))
+writeBin(as.raw((sample(0:255, 1000, replace = TRUE))),
+         con = file.path(path, "test.bin"))
 add(repo, "test.bin")
 commit(repo, "Add binary file")
 blob <- tree(last_commit(repo))["test.bin"]
@@ -96,9 +98,9 @@ stopifnot(identical(hash(c("Hello, world!\n",
                            "test content\n")),
                     hashfile(c(file.path(path, "test-1.txt"),
                                file.path(path, "test-2.txt")))))
-tools::assertError(hashfile(c(file.path(path, "test-1.txt"),
-                              NA_character_,
-                              file.path(path, "test-2.txt"))))
+assertError(hashfile(c(file.path(path, "test-1.txt"),
+                       NA_character_,
+                       file.path(path, "test-2.txt"))))
 stopifnot(identical(hashfile(character(0)), character(0)))
 
 ## Create blob from disk
@@ -133,20 +135,19 @@ stopifnot(identical(sapply(blob_list_2, "[[", "sha"),
                       "d670460b4b4aece5915caf5c68d12f560a9fe3e4")))
 
 ## Test arguments
-res <- tools::assertError(.Call(git2r:::git2r_blob_content, NULL))
-stopifnot(length(grep("'blob' must be an S3 class git_blob",
-                      res[[1]]$message)) > 0)
-res <- tools::assertError(.Call(git2r:::git2r_blob_content, 3))
-stopifnot(length(grep("'blob' must be an S3 class git_blob",
-                      res[[1]]$message)) > 0)
-res <- tools::assertError(.Call(git2r:::git2r_blob_content, repo))
-stopifnot(length(grep("'blob' must be an S3 class git_blob",
-                      res[[1]]$message)) > 0)
+check_error(assertError(.Call(git2r:::git2r_blob_content, NULL)),
+            "'blob' must be an S3 class git_blob")
+check_error(assertError(.Call(git2r:::git2r_blob_content, 3)),
+            "'blob' must be an S3 class git_blob")
+check_error(assertError(.Call(git2r:::git2r_blob_content, repo)),
+            "'blob' must be an S3 class git_blob")
+
 b <- blob_list_1[[1]]
 b$sha <- NA_character_
-res <- tools::assertError(.Call(git2r:::git2r_blob_content, b))
-stopifnot(length(grep("'blob' must be an S3 class git_blob",
-                      res[[1]]$message)) > 0)
+check_error(assertError(.Call(git2r:::git2r_blob_content, b)),
+            "'blob' must be an S3 class git_blob")
+
+check_error(assertError(hashfile(NA)), "invalid 'path' argument")
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

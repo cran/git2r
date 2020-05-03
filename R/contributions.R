@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -36,18 +36,19 @@
 ##'
 ##' ## Clone to repo 1 and config user
 ##' repo_1 <- clone(path_bare, path_repo_1)
-##' config(repo_1, user.name="Alice", user.email="alice@@example.org")
+##' config(repo_1, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Add changes to repo 1 and push to bare
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            con = file.path(path_repo_1, "test.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo_1, "test.txt"))
 ##' add(repo_1, "test.txt")
 ##' commit(repo_1, "First commit message")
 ##'
 ##' ## Add more changes to repo 1
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-##'            con = file.path(path_repo_1, "test.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+##' writeLines(lines, file.path(path_repo_1, "test.txt"))
 ##' add(repo_1, "test.txt")
 ##' commit(repo_1, "Second commit message")
 ##'
@@ -56,13 +57,14 @@
 ##'
 ##' ## Clone to repo 2
 ##' repo_2 <- clone(path_bare, path_repo_2)
-##' config(repo_2, user.name="Bob", user.email="bob@@example.org")
+##' config(repo_2, user.name = "Bob", user.email = "bob@@example.org")
 ##'
 ##' ## Add changes to repo 2
-##' writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'              "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
-##'              "minim veniam, quis nostrud exercitation ullamco laboris nisi ut"),
-##'            con = file.path(path_repo_2, "test.txt"))
+##' lines <- c(
+##'   "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+##'   "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad",
+##'   "minim veniam, quis nostrud exercitation ullamco laboris nisi ut")
+##' writeLines(lines, file.path(path_repo_2, "test.txt"))
 ##' add(repo_2, "test.txt")
 ##' commit(repo_2, "Third commit message")
 ##'
@@ -80,14 +82,13 @@
 ##' }
 contributions <- function(repo = ".",
                           breaks = c("month", "year", "quarter", "week", "day"),
-                          by = c("commits", "author"))
-{
+                          by = c("commits", "author")) {
     breaks <- match.arg(breaks)
     by <- match.arg(by)
 
     ctbs <- .Call(git2r_revwalk_contributions, lookup_repository(repo),
                   TRUE, TRUE, FALSE)
-    ctbs$when <- as.POSIXct(ctbs$when, origin="1970-01-01", tz="GMT")
+    ctbs$when <- as.POSIXct(ctbs$when, origin = "1970-01-01", tz = "GMT")
     ctbs$when <- as.POSIXct(cut(ctbs$when, breaks = breaks))
 
     if (identical(by, "commits")) {
@@ -98,7 +99,7 @@ contributions <- function(repo = ".",
         ## Create an index and tabulate
         ctbs$index <- paste0(ctbs$when, ctbs$author, ctbs$email)
         count <- as.data.frame(table(ctbs$index),
-                               stringsAsFactors=FALSE)
+                               stringsAsFactors = FALSE)
         names(count) <- c("index", "n")
 
         ## Match counts and clean result
@@ -106,7 +107,7 @@ contributions <- function(repo = ".",
         ctbs$n <- count$n[match(ctbs$index, count$index)]
         ctbs <- unique(ctbs[, c("when", "author", "n")])
         ctbs$when <- as.Date(substr(as.character(ctbs$when), 1, 10))
-        ctbs <- ctbs[order(ctbs$when, ctbs$author),]
+        ctbs <- ctbs[order(ctbs$when, ctbs$author), ]
         row.names(ctbs) <- NULL
     }
 

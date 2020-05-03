@@ -28,9 +28,9 @@ dir.create(path)
 repo <- init(path)
 
 ## Create a user and commit a file
-config(repo, user.name="Alice", user.email="alice@example.org")
-writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-           file.path(path, "example.txt"))
+config(repo, user.name = "Alice", user.email = "alice@example.org")
+lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+writeLines(lines, file.path(path, "example.txt"))
 add(repo, "example.txt")
 commit_1 <- commit(repo, "First commit message")
 
@@ -38,10 +38,10 @@ commit_1 <- commit(repo, "First commit message")
 tag(repo, "Tagname", "Tag message")
 
 ## First, get SHAs to lookup in the repository
-sha_commit <- commit_1@sha
-sha_tree <- tree(commit_1)@sha
-sha_blob <- tree(commit_1)["example.txt"]$sha
-sha_tag <- tags(repo)[[1]]@sha
+sha_commit <- sha(commit_1)
+sha_tree <- sha(tree(commit_1))
+sha_blob <- sha(tree(commit_1)["example.txt"])
+sha_tag <- sha(tags(repo)[[1]])
 
 ## SHAs
 sha_commit

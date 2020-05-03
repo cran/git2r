@@ -29,11 +29,11 @@
 ##' repo <- clone(path_bare, path_repo)
 ##'
 ##' ## Config user and commit a file
-##' config(repo, user.name="Alice", user.email="alice@@example.org")
+##' config(repo, user.name = "Alice", user.email = "alice@@example.org")
 ##'
 ##' ## Write to a file and commit
-##' writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-##'            file.path(path_repo, "example.txt"))
+##' lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+##' writeLines(lines, file.path(path_repo, "example.txt"))
 ##' add(repo, "example.txt")
 ##' commit(repo, "First commit message")
 ##'
@@ -58,7 +58,7 @@ references <- function(repo = ".") {
 ##' @export
 format.git_reference <- function(x, ...) {
     if (identical(x$type, 1L))
-        return(sprintf("[%s] %s", substr(x$sha, 1 , 6), x$shorthand))
+        return(sprintf("[%s] %s", substr(x$sha, 1, 6), x$shorthand))
     sprintf("%s => %s", x$name, x$target)
 }
 

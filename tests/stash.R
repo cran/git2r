@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -20,18 +20,18 @@ library("git2r")
 sessionInfo()
 
 ## Create a directory in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Initialize a repository
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Create a file
 writeLines("Hello world!", file.path(path, "test-1.txt"))
 
 ## add and commit
-add(repo, 'test-1.txt')
+add(repo, "test-1.txt")
 commit(repo, "Commit message")
 
 ## Pop stash
@@ -44,7 +44,7 @@ stopifnot(identical(c("Hello world!", "HELLO WORLD!"),
                     readLines(file.path(path, "test-1.txt"))))
 
 ## Make one more commit
-add(repo, 'test-1.txt')
+add(repo, "test-1.txt")
 commit(repo, "Next commit message")
 
 ## Check that there are no stashes
@@ -64,7 +64,7 @@ stash_drop(repo, 1)
 stopifnot(identical(stash_list(repo), list()))
 
 ## Make one more commit
-add(repo, 'test-1.txt')
+add(repo, "test-1.txt")
 commit(repo, "Apply stash commit message")
 
 ## Create one more file
@@ -76,7 +76,7 @@ stopifnot(identical(stash_list(repo), list()))
 ## Stash
 stash(repo)
 stopifnot(identical(stash_list(repo), list()))
-s <- stash(repo, untracked=TRUE)
+s <- stash(repo, untracked = TRUE)
 stopifnot(identical(print(s), s))
 summary(s)
 stopifnot(identical(length(stash_list(repo)), 1L))
@@ -95,7 +95,7 @@ tools::assertError(stash_drop(repo, 0.5))
 writeLines("Hello world!", file.path(path, "test-3.txt"))
 
 ## Create stash in repository
-stash(repo, untracked=TRUE)
+stash(repo, untracked = TRUE)
 stopifnot(identical(length(stash_list(repo)), 1L))
 
 ## Check stash_list method with missing repo argument
@@ -108,4 +108,4 @@ if (!is.null(wd))
 stash_drop(stash_list(repo)[[1]])
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

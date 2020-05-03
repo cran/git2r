@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2018 The git2r contributors
+## Copyright (C) 2013-2019 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -20,12 +20,12 @@ library("git2r")
 sessionInfo()
 
 ## Create directory for repository in tempdir
-path <- tempfile(pattern="git2r-")
+path <- tempfile(pattern = "git2r-")
 dir.create(path)
 
 ## Create repository
 repo <- init(path)
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Add changes to repo
 writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
@@ -45,7 +45,7 @@ commit_2 <- commit(repo, "Second commit message")
 
 # Checkout master and merge
 b <- branches(repo)
-checkout(b[sapply(b, "[", "name") == "master"][[1]], force=TRUE)
+checkout(b[sapply(b, "[", "name") == "master"][[1]], force = TRUE)
 m <- merge(b[sapply(b, "[", "name") == "test"][[1]])
 
 # Check merge
@@ -61,4 +61,4 @@ r <- reflog(repo)
 stopifnot(identical(r[[1]]$message, "merge test: Fast-forward"))
 
 ## Cleanup
-unlink(path, recursive=TRUE)
+unlink(path, recursive = TRUE)

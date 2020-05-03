@@ -4,8 +4,14 @@
 \alias{push}
 \title{Push}
 \usage{
-push(object = ".", name = NULL, refspec = NULL, force = FALSE,
-  credentials = NULL, set_upstream = FALSE)
+push(
+  object = ".",
+  name = NULL,
+  refspec = NULL,
+  force = FALSE,
+  credentials = NULL,
+  set_upstream = FALSE
+)
 }
 \arguments{
 \item{object}{path to repository, or a \code{git_repository} or
@@ -45,11 +51,11 @@ repo_bare <- init(path_bare, bare = TRUE)
 repo <- clone(path_bare, path_repo)
 
 ## Config user and commit a file
-config(repo, user.name="Alice", user.email="alice@example.org")
+config(repo, user.name = "Alice", user.email = "alice@example.org")
 
 ## Write to a file and commit
-writeLines("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-           file.path(path_repo, "example.txt"))
+lines <- "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do"
+writeLines(lines, file.path(path_repo, "example.txt"))
 add(repo, "example.txt")
 commit(repo, "First commit message")
 
@@ -66,9 +72,10 @@ push(repo, "origin", "refs/heads/master", set_upstream = TRUE)
 branch_get_upstream(repository_head(repo))
 
 ## Change file and commit
-writeLines(c("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
-             "eiusmod tempor incididunt ut labore et dolore magna aliqua."),
-           file.path(path_repo, "example.txt"))
+lines <- c(
+  "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do",
+  "eiusmod tempor incididunt ut labore et dolore magna aliqua.")
+writeLines(lines, file.path(path_repo, "example.txt"))
 add(repo, "example.txt")
 commit(repo, "Second commit message")
 
