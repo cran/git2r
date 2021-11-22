@@ -49,18 +49,18 @@
 #define REBASE_FILE_MODE    0666
 
 typedef enum {
-	GIT_REBASE_TYPE_NONE = 0,
-	GIT_REBASE_TYPE_APPLY = 1,
-	GIT_REBASE_TYPE_MERGE = 2,
-	GIT_REBASE_TYPE_INTERACTIVE = 3,
-} git_rebase_type_t;
+	GIT_REBASE_NONE = 0,
+	GIT_REBASE_APPLY = 1,
+	GIT_REBASE_MERGE = 2,
+	GIT_REBASE_INTERACTIVE = 3,
+} git_rebase_t;
 
 struct git_rebase {
 	git_repository *repo;
 
 	git_rebase_options options;
 
-	git_rebase_type_t type;
+	git_rebase_t type;
 	char *state_path;
 
 	int head_detached : 1,
@@ -86,18 +86,18 @@ struct git_rebase {
 #define GIT_REBASE_STATE_INIT {0}
 
 static int rebase_state_type(
-	git_rebase_type_t *type_out,
+	git_rebase_t *type_out,
 	char **path_out,
 	git_repository *repo)
 {
 	git_buf path = GIT_BUF_INIT;
-	git_rebase_type_t type = GIT_REBASE_TYPE_NONE;
+	git_rebase_t type = GIT_REBASE_NONE;
 
 	if (git_buf_joinpath(&path, repo->gitdir, REBASE_APPLY_DIR) < 0)
 		return -1;
 
 	if (git_path_isdir(git_buf_cstr(&path))) {
-		type = GIT_REBASE_TYPE_APPLY;
+		type = GIT_REBASE_APPLY;
 		goto done;
 	}
 
@@ -106,14 +106,14 @@ static int rebase_state_type(
 		return -1;
 
 	if (git_path_isdir(git_buf_cstr(&path))) {
-		type = GIT_REBASE_TYPE_MERGE;
+		type = GIT_REBASE_MERGE;
 		goto done;
 	}
 
 done:
 	*type_out = type;
 
-	if (type != GIT_REBASE_TYPE_NONE && path_out)
+	if (type != GIT_REBASE_NONE && path_out)
 		*path_out = git_buf_detach(&path);
 
 	git_buf_dispose(&path);
@@ -186,8 +186,8 @@ static git_rebase_operation *rebase_operation_alloc(
 {
 	git_rebase_operation *operation;
 
-	assert((type == GIT_REBASE_OPERATION_EXEC) == !id);
-	assert((type == GIT_REBASE_OPERATION_EXEC) == !!exec);
+	GIT_ASSERT_WITH_RETVAL((type == GIT_REBASE_OPERATION_EXEC) == !id, NULL);
+	GIT_ASSERT_WITH_RETVAL((type == GIT_REBASE_OPERATION_EXEC) == !!exec, NULL);
 
 	if ((operation = git_array_alloc(rebase->operations)) == NULL)
 		return NULL;
@@ -268,7 +268,7 @@ static int rebase_alloc(git_rebase **out, const git_rebase_options *rebase_opts)
 	if (rebase_opts)
 		memcpy(&rebase->options, rebase_opts, sizeof(git_rebase_options));
 	else
-		git_rebase_init_options(&rebase->options, GIT_REBASE_OPTIONS_VERSION);
+		git_rebase_options_init(&rebase->options, GIT_REBASE_OPTIONS_VERSION);
 
 	if (rebase_opts && rebase_opts->rewrite_notes_ref) {
 		rebase->options.rewrite_notes_ref = git__strdup(rebase_opts->rewrite_notes_ref);
@@ -298,9 +298,10 @@ int git_rebase_open(
 	git_rebase *rebase;
 	git_buf path = GIT_BUF_INIT, orig_head_name = GIT_BUF_INIT,
 		orig_head_id = GIT_BUF_INIT, onto_id = GIT_BUF_INIT;
-	int state_path_len, error;
+	size_t state_path_len;
+	int error;
 
-	assert(repo);
+	GIT_ASSERT_ARG(repo);
 
 	if ((error = rebase_check_versions(given_opts)) < 0)
 		return error;
@@ -313,7 +314,7 @@ int git_rebase_open(
 	if ((error = rebase_state_type(&rebase->type, &rebase->state_path, repo)) < 0)
 		goto done;
 
-	if (rebase->type == GIT_REBASE_TYPE_NONE) {
+	if (rebase->type == GIT_REBASE_NONE) {
 		git_error_set(GIT_ERROR_REBASE, "there is no rebase in progress");
 		error = GIT_ENOTFOUND;
 		goto done;
@@ -369,14 +370,14 @@ int git_rebase_open(
 		rebase->orig_head_name = git_buf_detach(&orig_head_name);
 
 	switch (rebase->type) {
-	case GIT_REBASE_TYPE_INTERACTIVE:
+	case GIT_REBASE_INTERACTIVE:
 		git_error_set(GIT_ERROR_REBASE, "interactive rebase is not supported");
 		error = -1;
 		break;
-	case GIT_REBASE_TYPE_MERGE:
+	case GIT_REBASE_MERGE:
 		error = rebase_open_merge(rebase);
 		break;
-	case GIT_REBASE_TYPE_APPLY:
+	case GIT_REBASE_APPLY:
 		git_error_set(GIT_ERROR_REBASE, "patch application rebase is not supported");
 		error = -1;
 		break;
@@ -493,22 +494,29 @@ static int rebase_setupfiles(git_rebase *rebase)
 	return rebase_setupfiles_merge(rebase);
 }
 
-int git_rebase_init_options(git_rebase_options *opts, unsigned int version)
+int git_rebase_options_init(git_rebase_options *opts, unsigned int version)
 {
 	GIT_INIT_STRUCTURE_FROM_TEMPLATE(
 		opts, version, git_rebase_options, GIT_REBASE_OPTIONS_INIT);
 	return 0;
 }
 
+#ifndef GIT_DEPRECATE_HARD
+int git_rebase_init_options(git_rebase_options *opts, unsigned int version)
+{
+	return git_rebase_options_init(opts, version);
+}
+#endif
+
 static int rebase_ensure_not_in_progress(git_repository *repo)
 {
 	int error;
-	git_rebase_type_t type;
+	git_rebase_t type;
 
 	if ((error = rebase_state_type(&type, NULL, repo)) < 0)
 		return error;
 
-	if (type != GIT_REBASE_TYPE_NONE) {
+	if (type != GIT_REBASE_NONE) {
 		git_error_set(GIT_ERROR_REBASE, "there is an existing rebase in progress");
 		return -1;
 	}
@@ -693,7 +701,8 @@ int git_rebase_init(
 	bool inmemory = (given_opts && given_opts->inmemory);
 	int error;
 
-	assert(repo && (upstream || onto));
+	GIT_ASSERT_ARG(repo);
+	GIT_ASSERT_ARG(upstream || onto);
 
 	*out = NULL;
 
@@ -723,7 +732,7 @@ int git_rebase_init(
 
 	rebase->repo = repo;
 	rebase->inmemory = inmemory;
-	rebase->type = GIT_REBASE_TYPE_MERGE;
+	rebase->type = GIT_REBASE_MERGE;
 
 	if ((error = rebase_init_operations(rebase, repo, branch, upstream, onto)) < 0)
 		goto done;
@@ -758,7 +767,7 @@ static void normalize_checkout_options_for_apply(
 	if (!checkout_opts->ancestor_label)
 		checkout_opts->ancestor_label = "ancestor";
 
-	if (rebase->type == GIT_REBASE_TYPE_MERGE) {
+	if (rebase->type == GIT_REBASE_MERGE) {
 		if (!checkout_opts->our_label)
 			checkout_opts->our_label = rebase->onto_name;
 
@@ -904,14 +913,15 @@ int git_rebase_next(
 {
 	int error;
 
-	assert(out && rebase);
+	GIT_ASSERT_ARG(out);
+	GIT_ASSERT_ARG(rebase);
 
 	if ((error = rebase_movenext(rebase)) < 0)
 		return error;
 
 	if (rebase->inmemory)
 		error = rebase_next_inmemory(out, rebase);
-	else if (rebase->type == GIT_REBASE_TYPE_MERGE)
+	else if (rebase->type == GIT_REBASE_MERGE)
 		error = rebase_next_merge(out, rebase);
 	else
 		abort();
@@ -923,13 +933,63 @@ int git_rebase_inmemory_index(
 	git_index **out,
 	git_rebase *rebase)
 {
-	assert(out && rebase && rebase->index);
+	GIT_ASSERT_ARG(out);
+	GIT_ASSERT_ARG(rebase);
+	GIT_ASSERT_ARG(rebase->index);
 
 	GIT_REFCOUNT_INC(rebase->index);
 	*out = rebase->index;
 
 	return 0;
 }
+
+#ifndef GIT_DEPRECATE_HARD
+static int create_signed(
+	git_oid *out,
+	git_rebase *rebase,
+	const git_signature *author,
+	const git_signature *committer,
+	const char *message_encoding,
+	const char *message,
+	git_tree *tree,
+	size_t parent_count,
+	const git_commit **parents)
+{
+	git_buf commit_content = GIT_BUF_INIT,
+	        commit_signature = GIT_BUF_INIT,
+	        signature_field = GIT_BUF_INIT;
+	int error;
+
+	git_error_clear();
+
+	if ((error = git_commit_create_buffer(&commit_content,
+		rebase->repo, author, committer, message_encoding,
+		message, tree, parent_count, parents)) < 0)
+		goto done;
+
+	error = rebase->options.signing_cb(&commit_signature,
+		&signature_field, commit_content.ptr,
+		rebase->options.payload);
+
+	if (error) {
+		if (error != GIT_PASSTHROUGH)
+			git_error_set_after_callback_function(error, "signing_cb");
+
+		goto done;
+	}
+
+	error = git_commit_create_with_signature(out, rebase->repo,
+		commit_content.ptr,
+		commit_signature.size > 0 ? commit_signature.ptr : NULL,
+		signature_field.size > 0 ? signature_field.ptr : NULL);
+
+done:
+	git_buf_dispose(&commit_signature);
+	git_buf_dispose(&signature_field);
+	git_buf_dispose(&commit_content);
+	return error;
+}
+#endif
 
 static int rebase_commit__create(
 	git_commit **out,
@@ -975,10 +1035,35 @@ static int rebase_commit__create(
 		message = git_commit_message(current_commit);
 	}
 
-	if ((error = git_commit_create(&commit_id, rebase->repo, NULL, author,
-		committer, message_encoding, message, tree, 1,
-		(const git_commit **)&parent_commit)) < 0 ||
-		(error = git_commit_lookup(&commit, rebase->repo, &commit_id)) < 0)
+	git_error_clear();
+	error = GIT_PASSTHROUGH;
+
+	if (rebase->options.commit_create_cb) {
+		error = rebase->options.commit_create_cb(&commit_id,
+			author, committer, message_encoding, message,
+			tree, 1, (const git_commit **)&parent_commit,
+			rebase->options.payload);
+
+		git_error_set_after_callback_function(error,
+			"commit_create_cb");
+	}
+#ifndef GIT_DEPRECATE_HARD
+	else if (rebase->options.signing_cb) {
+		error = create_signed(&commit_id, rebase, author,
+			committer, message_encoding, message, tree,
+			1, (const git_commit **)&parent_commit);
+	}
+#endif
+
+	if (error == GIT_PASSTHROUGH)
+		error = git_commit_create(&commit_id, rebase->repo, NULL,
+			author, committer, message_encoding, message,
+			tree, 1, (const git_commit **)&parent_commit);
+
+	if (error)
+		goto done;
+
+	if ((error = git_commit_lookup(&commit, rebase->repo, &commit_id)) < 0)
 		goto done;
 
 	*out = commit;
@@ -1010,7 +1095,7 @@ static int rebase_commit_merge(
 	int error;
 
 	operation = git_array_get(rebase->operations, rebase->current);
-	assert(operation);
+	GIT_ASSERT(operation);
 
 	if ((error = rebase_ensure_not_dirty(rebase->repo, false, true, GIT_EUNMERGED)) < 0 ||
 		(error = git_repository_head(&head, rebase->repo)) < 0 ||
@@ -1050,9 +1135,9 @@ static int rebase_commit_inmemory(
 	git_commit *commit = NULL;
 	int error = 0;
 
-	assert(rebase->index);
-	assert(rebase->last_commit);
-	assert(rebase->current < rebase->operations.size);
+	GIT_ASSERT_ARG(rebase->index);
+	GIT_ASSERT_ARG(rebase->last_commit);
+	GIT_ASSERT_ARG(rebase->current < rebase->operations.size);
 
 	if ((error = rebase_commit__create(&commit, rebase, rebase->index,
 		rebase->last_commit, author, committer, message_encoding, message)) < 0)
@@ -1080,12 +1165,13 @@ int git_rebase_commit(
 {
 	int error;
 
-	assert(rebase && committer);
+	GIT_ASSERT_ARG(rebase);
+	GIT_ASSERT_ARG(committer);
 
 	if (rebase->inmemory)
 		error = rebase_commit_inmemory(
 			id, rebase, author, committer, message_encoding, message);
-	else if (rebase->type == GIT_REBASE_TYPE_MERGE)
+	else if (rebase->type == GIT_REBASE_MERGE)
 		error = rebase_commit_merge(
 			id, rebase, author, committer, message_encoding, message);
 	else
@@ -1100,7 +1186,7 @@ int git_rebase_abort(git_rebase *rebase)
 	git_commit *orig_head_commit = NULL;
 	int error;
 
-	assert(rebase);
+	GIT_ASSERT_ARG(rebase);
 
 	if (rebase->inmemory)
 		return 0;
@@ -1313,7 +1399,7 @@ int git_rebase_finish(
 {
 	int error = 0;
 
-	assert(rebase);
+	GIT_ASSERT_ARG(rebase);
 
 	if (rebase->inmemory)
 		return 0;
@@ -1327,23 +1413,42 @@ int git_rebase_finish(
 	return error;
 }
 
+const char *git_rebase_orig_head_name(git_rebase *rebase) {
+	GIT_ASSERT_ARG_WITH_RETVAL(rebase, NULL);
+	return rebase->orig_head_name;
+}
+
+const git_oid *git_rebase_orig_head_id(git_rebase *rebase) {
+	GIT_ASSERT_ARG_WITH_RETVAL(rebase, NULL);
+	return &rebase->orig_head_id;
+}
+
+const char *git_rebase_onto_name(git_rebase *rebase) {
+	GIT_ASSERT_ARG_WITH_RETVAL(rebase, NULL);
+	return rebase->onto_name;
+}
+
+const git_oid *git_rebase_onto_id(git_rebase *rebase) {
+	return &rebase->onto_id;
+}
+
 size_t git_rebase_operation_entrycount(git_rebase *rebase)
 {
-	assert(rebase);
+	GIT_ASSERT_ARG_WITH_RETVAL(rebase, 0);
 
 	return git_array_size(rebase->operations);
 }
 
 size_t git_rebase_operation_current(git_rebase *rebase)
 {
-	assert(rebase);
+	GIT_ASSERT_ARG_WITH_RETVAL(rebase, 0);
 
 	return rebase->started ? rebase->current : GIT_REBASE_NO_OPERATION;
 }
 
 git_rebase_operation *git_rebase_operation_byindex(git_rebase *rebase, size_t idx)
 {
-	assert(rebase);
+	GIT_ASSERT_ARG_WITH_RETVAL(rebase, NULL);
 
 	return git_array_get(rebase->operations, idx);
 }

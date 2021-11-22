@@ -29,12 +29,6 @@
 #	endif
 #endif
 
-#ifdef __GNUC__
-#	define GIT_TYPEOF(x) (__typeof__(x))
-#else
-#	define GIT_TYPEOF(x)
-#endif
-
 #if defined(__GNUC__)
 #	define GIT_ALIGN(x,size) x __attribute__ ((aligned(size)))
 #elif defined(_MSC_VER)
@@ -43,10 +37,23 @@
 #	define GIT_ALIGN(x,size) x
 #endif
 
-#define GIT_UNUSED(x) ((void)(x))
+#if defined(__GNUC__)
+# define GIT_UNUSED(x)                                                         \
+	do {                                                                   \
+		__typeof__(x) _unused __attribute__((unused));                 \
+		_unused = (x);                                                 \
+	} while (0)
+#else
+# define GIT_UNUSED(x) ((void)(x))
+#endif
 
-/* Define the printf format specifer to use for size_t output */
+/* Define the printf format specifier to use for size_t output */
 #if defined(_MSC_VER) || defined(__MINGW32__)
+
+/* Visual Studio 2012 and prior lack PRId64 entirely */
+#	ifndef PRId64
+#		define PRId64 "I64d"
+#	endif
 
 /* The first block is needed to avoid warnings on MingW amd64 */
 #	if (SIZE_MAX == ULLONG_MAX)

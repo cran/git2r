@@ -12,10 +12,9 @@
 #include "git2/index.h"
 #include "git2/sys/filter.h"
 
-#include "fileops.h"
+#include "futils.h"
 #include "hash.h"
 #include "filter.h"
-#include "buf_text.h"
 #include "repository.h"
 
 typedef enum {
@@ -44,11 +43,11 @@ struct crlf_filter {
 
 static git_crlf_t check_crlf(const char *value)
 {
-	if (GIT_ATTR_TRUE(value))
+	if (GIT_ATTR_IS_TRUE(value))
 		return GIT_CRLF_TEXT;
-	else if (GIT_ATTR_FALSE(value))
+	else if (GIT_ATTR_IS_FALSE(value))
 		return GIT_CRLF_BINARY;
-	else if (GIT_ATTR_UNSPECIFIED(value))
+	else if (GIT_ATTR_IS_UNSPECIFIED(value))
 		;
 	else if (strcmp(value, "input") == 0)
 		return GIT_CRLF_TEXT_INPUT;
@@ -58,9 +57,9 @@ static git_crlf_t check_crlf(const char *value)
 	return GIT_CRLF_UNDEFINED;
 }
 
-static git_cvar_value check_eol(const char *value)
+static git_configmap_value check_eol(const char *value)
 {
-	if (GIT_ATTR_UNSPECIFIED(value))
+	if (GIT_ATTR_IS_UNSPECIFIED(value))
 		;
 	else if (strcmp(value, "lf") == 0)
 		return GIT_EOL_LF;
@@ -78,7 +77,7 @@ static int has_cr_in_index(const git_filter_source *src)
 	const git_index_entry *entry;
 	git_blob *blob;
 	const void *blobcontent;
-	git_off_t blobsize;
+	git_object_size_t blobsize;
 	bool found_cr;
 
 	if (!path)
@@ -127,7 +126,7 @@ static int text_eol_is_crlf(struct crlf_attrs *ca)
 	return 0;
 }
 
-static git_cvar_value output_eol(struct crlf_attrs *ca)
+static git_configmap_value output_eol(struct crlf_attrs *ca)
 {
 	switch (ca->crlf_action) {
 	case GIT_CRLF_BINARY:
@@ -219,7 +218,7 @@ static int crlf_apply_to_odb(
 	if (ca->crlf_action == GIT_CRLF_BINARY || !git_buf_len(from))
 		return GIT_PASSTHROUGH;
 
-	is_binary = git_buf_text_gather_stats(&stats, from, false);
+	is_binary = git_buf_gather_text_stats(&stats, from, false);
 
 	/* Heuristics to see if we can skip the conversion.
 	 * Straight from Core Git.
@@ -247,7 +246,7 @@ static int crlf_apply_to_odb(
 		return GIT_PASSTHROUGH;
 
 	/* Actually drop the carriage returns */
-	return git_buf_text_crlf_to_lf(to, from);
+	return git_buf_crlf_to_lf(to, from);
 }
 
 static int crlf_apply_to_workdir(
@@ -262,7 +261,7 @@ static int crlf_apply_to_workdir(
 	if (git_buf_len(from) == 0 || output_eol(ca) != GIT_EOL_CRLF)
 		return GIT_PASSTHROUGH;
 
-	is_binary = git_buf_text_gather_stats(&stats, from, false);
+	is_binary = git_buf_gather_text_stats(&stats, from, false);
 
 	/* If there are no LFs, or all LFs are part of a CRLF, nothing to do */
 	if (stats.lf == 0 || stats.lf == stats.crlf)
@@ -281,7 +280,7 @@ static int crlf_apply_to_workdir(
 			return GIT_PASSTHROUGH;
 	}
 
-	return git_buf_text_lf_to_crlf(to, from);
+	return git_buf_lf_to_crlf(to, from);
 }
 
 static int convert_attrs(
@@ -293,12 +292,12 @@ static int convert_attrs(
 
 	memset(ca, 0, sizeof(struct crlf_attrs));
 
-	if ((error = git_repository__cvar(&ca->auto_crlf,
-		 git_filter_source_repo(src), GIT_CVAR_AUTO_CRLF)) < 0 ||
-		(error = git_repository__cvar(&ca->safe_crlf,
-		 git_filter_source_repo(src), GIT_CVAR_SAFE_CRLF)) < 0 ||
-		(error = git_repository__cvar(&ca->core_eol,
-		 git_filter_source_repo(src), GIT_CVAR_EOL)) < 0)
+	if ((error = git_repository__configmap_lookup(&ca->auto_crlf,
+		 git_filter_source_repo(src), GIT_CONFIGMAP_AUTO_CRLF)) < 0 ||
+		(error = git_repository__configmap_lookup(&ca->safe_crlf,
+		 git_filter_source_repo(src), GIT_CONFIGMAP_SAFE_CRLF)) < 0 ||
+		(error = git_repository__configmap_lookup(&ca->core_eol,
+		 git_filter_source_repo(src), GIT_CONFIGMAP_EOL)) < 0)
 		return error;
 
 	/* downgrade FAIL to WARN if ALLOW_UNSAFE option is used */
@@ -387,6 +386,17 @@ static int crlf_apply(
 		return crlf_apply_to_odb(*payload, to, from, src);
 }
 
+static int crlf_stream(
+	git_writestream **out,
+	git_filter *self,
+	void **payload,
+	const git_filter_source *src,
+	git_writestream *next)
+{
+	return git_filter_buffered_stream_new(out,
+		self, crlf_apply, NULL, payload, src, next);
+}
+
 static void crlf_cleanup(
 	git_filter *self,
 	void       *payload)
@@ -406,7 +416,7 @@ git_filter *git_crlf_filter_new(void)
 	f->f.initialize = NULL;
 	f->f.shutdown = git_filter_free;
 	f->f.check    = crlf_check;
-	f->f.apply    = crlf_apply;
+	f->f.stream   = crlf_stream;
 	f->f.cleanup  = crlf_cleanup;
 
 	return (git_filter *)f;

@@ -258,8 +258,9 @@ GIT_EXTERN(int) git_treebuilder_new(
  * Clear all the entires in the builder
  *
  * @param bld Builder to clear
+ * @return 0 on success; error code otherwise
  */
-GIT_EXTERN(void) git_treebuilder_clear(git_treebuilder *bld);
+GIT_EXTERN(int) git_treebuilder_clear(git_treebuilder *bld);
 
 /**
  * Get the number of entries listed in a treebuilder
@@ -267,7 +268,7 @@ GIT_EXTERN(void) git_treebuilder_clear(git_treebuilder *bld);
  * @param bld a previously loaded treebuilder.
  * @return the number of entries in the treebuilder
  */
-GIT_EXTERN(unsigned int) git_treebuilder_entrycount(git_treebuilder *bld);
+GIT_EXTERN(size_t) git_treebuilder_entrycount(git_treebuilder *bld);
 
 /**
  * Free a tree builder
@@ -333,6 +334,7 @@ GIT_EXTERN(int) git_treebuilder_insert(
  *
  * @param bld Tree builder
  * @param filename Filename of the entry to remove
+ * @return 0 or an error code
  */
 GIT_EXTERN(int) git_treebuilder_remove(
 	git_treebuilder *bld, const char *filename);
@@ -357,8 +359,9 @@ typedef int GIT_CALLBACK(git_treebuilder_filter_cb)(
  * @param bld Tree builder
  * @param filter Callback to filter entries
  * @param payload Extra data to pass to filter callback
+ * @return 0 on success, non-zero callback return value, or error code
  */
-GIT_EXTERN(void) git_treebuilder_filter(
+GIT_EXTERN(int) git_treebuilder_filter(
 	git_treebuilder *bld,
 	git_treebuilder_filter_cb filter,
 	void *payload);
@@ -375,20 +378,6 @@ GIT_EXTERN(void) git_treebuilder_filter(
  */
 GIT_EXTERN(int) git_treebuilder_write(
 	git_oid *id, git_treebuilder *bld);
-
-/**
- * Write the contents of the tree builder as a tree object
- * using a shared git_buf.
- *
- * @see git_treebuilder_write
- *
- * @param oid Pointer to store the OID of the newly written tree
- * @param bld Tree builder to write
- * @param tree Shared buffer for writing the tree. Will be grown as necessary.
- * @return 0 or an error code
- */
-GIT_EXTERN(int) git_treebuilder_write_with_buffer(
-	git_oid *oid, git_treebuilder *bld, git_buf *tree);
 
 /** Callback for the tree traversal method */
 typedef int GIT_CALLBACK(git_treewalk_cb)(
@@ -475,6 +464,7 @@ typedef struct {
  * @param baseline the tree to base these changes on
  * @param nupdates the number of elements in the update list
  * @param updates the list of updates to perform
+ * @return 0 or an error code
  */
 GIT_EXTERN(int) git_tree_create_updated(git_oid *out, git_repository *repo, git_tree *baseline, size_t nupdates, const git_tree_update *updates);
 
