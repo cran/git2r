@@ -1,5 +1,5 @@
 ## git2r, R bindings to the libgit2 library.
-## Copyright (C) 2013-2019 The git2r contributors
+## Copyright (C) 2013-2022 The git2r contributors
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License, version 2,
@@ -133,6 +133,16 @@ summary.git_diff <- function(object, ...) {
 ##'     disable. Defaults to 512MB when max_size is NULL.
 ##' @return A \code{git_diff} object if as_char is FALSE. If as_char
 ##'     is TRUE and filename is NULL, a character string, else NULL.
+##' @section Line endings:
+##'
+##' Different operating systems handle line endings
+##' differently. Windows uses both a carriage-return character and a
+##' linefeed character to represent a newline in a file. While Linux
+##' and macOS use only the linefeed character for a newline in a
+##' file. To avoid problems in your diffs, you can configure Git to
+##' properly handle line endings using the \verb{core.autocrlf}
+##' setting in the Git config file, see the Git documentation
+##' (\url{https://git-scm.com/}).
 ##' @examples
 ##' \dontrun{
 ##' ## Initialize a repository
@@ -207,7 +217,7 @@ diff.git_repository <- function(x,
                                 path = NULL,
                                 max_size = NULL,
                                 ...) {
-    if (as_char) {
+    if (isTRUE(as_char)) {
         ## Make sure filename is character(0) to write to a
         ## character vector or a character vector with path in
         ## order to write to a file.
@@ -253,7 +263,7 @@ diff.git_tree <- function(x,
                           path = NULL,
                           max_size = NULL,
                           ...) {
-    if (as_char) {
+    if (isTRUE(as_char)) {
         ## Make sure filename is character(0) to write to a character
         ## vector or a character vector with path in order to write to
         ## a file.

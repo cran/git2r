@@ -1,6 +1,6 @@
-64c4485ec82248fb64ee3681e412ae9f *DESCRIPTION
+ee9db22586f22c53de9401dcb1a09709 *DESCRIPTION
 3873adb1c538f1527f2ee35bbfd02ef8 *NAMESPACE
-ea557f69e584fc472ed2e8d9eac712e3 *NEWS.md
+cc9a10da7c4d6493518ef046379a2732 *NEWS.md
 797b8718caed7353ce0ec190207cc5e7 *R/blame.R
 a7f91fbc1c6a48b134622179dfa4b5c3 *R/blob.R
 8a49695ede4af53eae9c6692322e9884 *R/branch.R
@@ -9,8 +9,8 @@ cbf32a0e95393840f72b17e46c88676d *R/checkout.R
 3ec322f31a20ac3fbb650543691ca5a0 *R/commit.R
 e04a3583d4db89278f94ed8f1de52a06 *R/config.R
 cfc05de640905bf42c3eef9e8d733380 *R/contributions.R
-2b03b95884253f2d65c968118c2ff8d8 *R/credential.R
-20549ad29d193e781329e163e1afdbd9 *R/diff.R
+34746b1d15225b9794a802a89b7403c9 *R/credential.R
+be519c980d0693ce3d116dc0a0c482a5 *R/diff.R
 cf2114d7b3b49447a6fe050ce1b2c6d7 *R/fetch.R
 0dbc7ad2d53b169031e3a074b691157f *R/git2r.R
 1032af9159d6221d4c439f0ef9a21aa2 *R/index.R
@@ -70,11 +70,11 @@ c518e42a71db69521a96f2b425dbde54 *man/commits.Rd
 916c66ab567489629f260079e89117d0 *man/contributions.Rd
 f38a93b3884ca35938443e1fcef67385 *man/cred_env.Rd
 2905f003036501cf8be6ecfb3936ebfa *man/cred_ssh_key.Rd
-92423531e5b43498b2fdf66c2ae45bdc *man/cred_token.Rd
+a0c7163144fbd632bb4b315cee12ac8c *man/cred_token.Rd
 ca3a5483751a14780d2514530f78c353 *man/cred_user_pass.Rd
 c6a4941cf08cfe908fff2c9384f7c904 *man/default_signature.Rd
 36796c3a8580c06fb5e62958233f4b8a *man/descendant_of.Rd
-c01a1399874918e9a977f6667a1b4e26 *man/diff-methods.Rd
+4d825c0e711d288b6c61a90747aa3557 *man/diff-methods.Rd
 4cb82d68b325bbb580eec72b4d919ced *man/discover_repository.Rd
 15413bac86f90043f7a9ce78005acf7f *man/fetch.Rd
 fd3a198a0bc7c4badd9b72df537e0ad4 *man/fetch_heads.Rd
@@ -158,6 +158,7 @@ df047e615d762624ec7cf191e8dee9d0 *man/tags.Rd
 c6d600aac2889b197b4aa95913a8e0a4 *man/when.Rd
 ba3a1a4f454f3d9d5fc01c5a3b568c85 *man/workdir.Rd
 fbd21714f2fcdb394e2958c148349fee *src/Makevars.in
+7c81c9bd60bd0753b21d7031b909c0b3 *src/Makevars.ucrt
 683135e27036e3e85ad6f65d34f4dc07 *src/Makevars.win
 f43c33c27fc938eba4ceda7bff119c5b *src/Makevars_libgit2.in
 4718460ae676f220fec2823b035cff18 *src/git2r-win.def
@@ -183,7 +184,7 @@ dfa305f80cf153eeb0e78a32c321d2a0 *src/git2r_config.c
 4ab9675f35d74c20bcc43d557ab214a6 *src/git2r_cred.c
 798b3d8996de780a641d9096797f24c1 *src/git2r_cred.h
 8590c684cbf4ce62c72f5b5f0f141c93 *src/git2r_deprecated.h
-be576f4fa70c470a068eb51a9bc93cc4 *src/git2r_diff.c
+91bced75dc4cea548a1b30dee9a77111 *src/git2r_diff.c
 a5c67c5ad4f9e0f6d9ebabc8ab230dd9 *src/git2r_diff.h
 691a2d92648714d016bc445787a1aa2c *src/git2r_error.c
 b2d94c84cf719b7092f5a8f7773fabfb *src/git2r_error.h
