@@ -1,3 +1,10 @@
+# git2r 0.31.0 (2023-01-26)
+
+## CHANGES
+
+* Removed unused macro 'AC_PROG_CC' from the build configuration
+  script.
+
 # git2r 0.30.1 (2022-03-15)
 
 ## CHANGES
