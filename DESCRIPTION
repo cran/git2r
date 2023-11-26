@@ -4,7 +4,7 @@ Description: Interface to the 'libgit2' library, which is a pure C
     implementation of the 'Git' core methods. Provides access to 'Git'
     repositories to extract data and running some basic 'Git'
     commands.
-Version: 0.32.0
+Version: 0.33.0
 License: GPL-2
 Copyright: See COPYRIGHTS file.
 URL: https://docs.ropensci.org/git2r/ (website),
@@ -13,7 +13,7 @@ BugReports: https://github.com/ropensci/git2r/issues
 Maintainer: Stefan Widgren <stefan.widgren@gmail.com>
 Author: See AUTHORS file.
 Imports: graphics, utils
-Depends: R (>= 3.4)
+Depends: R (>= 4.0)
 Suggests: getPass
 Type: Package
 Biarch: true
@@ -34,6 +34,6 @@ Collate: 'blame.R' 'blob.R' 'branch.R' 'bundle_r_package.R'
         'when.R'
 Encoding: UTF-8
 RoxygenNote: 7.2.3
-Packaged: 2023-04-12 19:47:19 UTC; stefan
+Packaged: 2023-11-26 16:10:10 UTC; stefan
 Repository: CRAN
-Date/Publication: 2023-04-12 21:00:03 UTC
+Date/Publication: 2023-11-26 16:50:05 UTC
