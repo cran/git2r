@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -19,7 +19,6 @@
 #include <R_ext/Visibility.h>
 #include <git2.h>
 #include "git2r_arg.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_libgit2.h"
 
@@ -100,7 +99,7 @@ git2r_ssl_cert_locations(
         git2r_error(__func__, NULL, git2r_err_ssl_cert_locations, NULL);
 
     if (git_libgit2_opts(GIT_OPT_SET_SSL_CERT_LOCATIONS, f, p))
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }

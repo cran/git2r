@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -21,7 +21,6 @@
 
 #include "git2r_arg.h"
 #include "git2r_cred.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_remote.h"
 #include "git2r_repository.h"
@@ -70,7 +69,7 @@ git2r_remote_add(
     git_repository_free(repository);
 
     if (error)
-	git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+	git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -101,7 +100,7 @@ git2r_update_tips_cb(
         git_oid_fmt(b_str, b);
         b_str[GIT_OID_HEXSZ] = '\0';
 
-        if (GIT2R_OID_IS_ZERO(a)) {
+        if (git_oid_is_zero(a)) {
             Rprintf("[new]     %.20s %s\n", b_str, refname);
         } else {
             char a_str[GIT_OID_HEXSZ + 1];
@@ -137,7 +136,7 @@ git2r_remote_fetch(
 {
     int error, nprotect = 0;
     SEXP result = R_NilValue;
-    const GIT2R_INDEXER_PROGRESS *stats;
+    const git_indexer_progress *stats;
     git_remote *remote = NULL;
     git_repository *repository = NULL;
     git_fetch_options fetch_opts = GIT_FETCH_OPTIONS_INIT;
@@ -176,7 +175,7 @@ git2r_remote_fetch(
             /* Allocate the strings in refs */
             refs.strings = malloc(refs.count * sizeof(char*));
             if (!refs.strings) {
-                GIT2R_ERROR_SET_STR(GIT2R_ERROR_NONE, git2r_err_alloc_memory_buffer);
+                giterr_set_str(GIT_ERROR_NONE, git2r_err_alloc_memory_buffer);
                 error = GIT_ERROR;
                 goto cleanup;
             }
@@ -219,7 +218,7 @@ cleanup:
     if (error)
         git2r_error(
             __func__,
-            GIT2R_ERROR_LAST(),
+            git_error_last(),
             git2r_err_unable_to_authenticate,
             NULL);
 
@@ -263,7 +262,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return list;
 }
@@ -297,7 +296,7 @@ git2r_remote_remove(
     git_repository_free(repository);
 
     if (error)
-	git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+	git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -343,7 +342,7 @@ cleanup:
     git_repository_free(repository);
 
     if (error)
-	git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+	git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -384,7 +383,7 @@ git2r_remote_set_url(
     git_repository_free(repository);
 
     if (error)
-	git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+	git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -442,7 +441,7 @@ cleanup:
     UNPROTECT(1);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return url;
 }
@@ -528,7 +527,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }

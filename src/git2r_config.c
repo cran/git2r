@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -20,7 +20,6 @@
 #include <git2.h>
 
 #include "git2r_arg.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_repository.h"
 
@@ -77,8 +76,8 @@ git2r_config_count_variables(
             n_level[6]++;
             break;
         default:
-            GIT2R_ERROR_SET_STR(GIT2R_ERROR_CONFIG,
-                                git2r_err_unexpected_config_level);
+            giterr_set_str(GIT_ERROR_CONFIG,
+                              git2r_err_unexpected_config_level);
             error = GIT_ERROR;
             goto cleanup;
         }
@@ -222,8 +221,8 @@ git2r_config_list_variables(
             git2r_config_list_add_entry(list, 6, i_level, i_list, entry);
             break;
         default:
-            GIT2R_ERROR_SET_STR(GIT2R_ERROR_CONFIG,
-                                git2r_err_unexpected_config_level);
+            giterr_set_str(GIT_ERROR_CONFIG,
+                              git2r_err_unexpected_config_level);
             error = GIT_ERROR;
             goto cleanup;
         }
@@ -325,7 +324,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -389,7 +388,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -437,7 +436,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -488,7 +487,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -524,7 +523,7 @@ git2r_config_find_file(
     else
         SET_STRING_ELT(result, 0, Rf_mkChar(buf.ptr));
 
-    GIT2R_BUF_DISPOSE(&buf);
+    git_buf_dispose(&buf);
     UNPROTECT(1);
 
     return result;

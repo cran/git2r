@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -20,7 +20,6 @@
 #include <git2.h>
 
 #include "git2r_arg.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_repository.h"
 #include "git2r_S3.h"
@@ -109,7 +108,7 @@ git2r_tree_walk_cb(
     git2r_tree_walk_cb_data *p = (git2r_tree_walk_cb_data*)payload;
 
     if (p->recursive) {
-        if (git_tree_entry_type(entry) != GIT2R_OBJECT_BLOB)
+        if (git_tree_entry_type(entry) != GIT_OBJECT_BLOB)
             return 0;
     } else if (*root) {
         return 1;
@@ -145,11 +144,11 @@ git2r_tree_walk_cb(
                        Rf_mkChar(git_tree_entry_name(entry)));
 
         /* length */
-        if (git_tree_entry_type(entry) == GIT2R_OBJECT_BLOB) {
+        if (git_tree_entry_type(entry) == GIT_OBJECT_BLOB) {
             error = git_tree_entry_to_object(&obj, p->repository, entry);
             if (error)
                 goto cleanup;
-            error = git_object_peel(&blob, obj, GIT2R_OBJECT_BLOB);
+            error = git_object_peel(&blob, obj, GIT_OBJECT_BLOB);
             if (error)
                 goto cleanup;
             INTEGER(VECTOR_ELT(p->list, 5))[p->n] = git_blob_rawsize((git_blob *)blob);
@@ -240,7 +239,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }

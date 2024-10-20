@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2023 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -19,7 +19,6 @@
 #include <R_ext/Visibility.h>
 #include "git2r_arg.h"
 #include "git2r_blob.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_repository.h"
 #include "git2r_S3.h"
@@ -85,7 +84,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -124,7 +123,7 @@ git2r_blob_create_fromdisk(
             git_blob *blob = NULL;
             SEXP item;
 
-            error = GIT2R_BLOB_CREATE_FROM_DISK(
+            error = git_blob_create_from_disk(
                 &oid,
                 repository,
                 CHAR(STRING_ELT(path, i)));
@@ -151,7 +150,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -194,7 +193,7 @@ git2r_blob_create_fromworkdir(
             git_blob *blob = NULL;
             SEXP item;
 
-            error = GIT2R_BLOB_CREATE_FROM_WORKDIR(
+            error = git_blob_create_from_workdir(
                 &oid,
                 repository,
                 CHAR(STRING_ELT(relative_path, i)));
@@ -221,7 +220,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -295,7 +294,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -338,7 +337,7 @@ cleanup:
     git_repository_free(repository);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return Rf_ScalarInteger(size);
 }

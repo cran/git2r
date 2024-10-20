@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -20,7 +20,6 @@
 #include <git2.h>
 
 #include "git2r_arg.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_reference.h"
 #include "git2r_repository.h"
@@ -53,11 +52,11 @@ git2r_reference_init(
         Rf_mkString(git_reference_shorthand(source)));
 
     switch (git_reference_type(source)) {
-    case GIT2R_REFERENCE_DIRECT:
+    case GIT_REFERENCE_DIRECT:
         SET_VECTOR_ELT(
             dest,
             git2r_S3_item__git_reference__type,
-            Rf_ScalarInteger(GIT2R_REFERENCE_DIRECT));
+            Rf_ScalarInteger(GIT_REFERENCE_DIRECT));
 
         git_oid_fmt(sha, git_reference_target(source));
         sha[GIT_OID_HEXSZ] = '\0';
@@ -66,11 +65,11 @@ git2r_reference_init(
             git2r_S3_item__git_reference__sha,
             Rf_mkString(sha));
         break;
-    case GIT2R_REFERENCE_SYMBOLIC:
+    case GIT_REFERENCE_SYMBOLIC:
         SET_VECTOR_ELT(
             dest,
             git2r_S3_item__git_reference__type,
-            Rf_ScalarInteger(GIT2R_REFERENCE_SYMBOLIC));
+            Rf_ScalarInteger(GIT_REFERENCE_SYMBOLIC));
 
         SET_VECTOR_ELT(
             dest,
@@ -136,7 +135,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -201,7 +200,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }

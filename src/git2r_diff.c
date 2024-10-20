@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -18,7 +18,6 @@
 
 #include <R_ext/Visibility.h>
 #include "git2r_arg.h"
-#include "git2r_deprecated.h"
 #include "git2r_diff.h"
 #include "git2r_error.h"
 #include "git2r_repository.h"
@@ -173,7 +172,7 @@ git2r_diff(
         error = git2r_copy_string_vec(&(opts.pathspec), path);
         if (error || !opts.pathspec.count) {
             free(opts.pathspec.strings);
-            git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+            git2r_error(__func__, git_error_last(), NULL, NULL);
         }
     }
 
@@ -301,7 +300,7 @@ git2r_diff_index_to_wd(
             nprotect++;
         }
 
-        GIT2R_BUF_DISPOSE(&buf);
+        git_buf_dispose(&buf);
     } else {
         FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
 
@@ -324,7 +323,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -411,7 +410,7 @@ git2r_diff_head_to_index(
             nprotect++;
         }
 
-        GIT2R_BUF_DISPOSE(&buf);
+        git_buf_dispose(&buf);
     } else {
         FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
 
@@ -436,7 +435,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -523,7 +522,7 @@ git2r_diff_tree_to_wd(
             nprotect++;
         }
 
-        GIT2R_BUF_DISPOSE(&buf);
+        git_buf_dispose(&buf);
     } else {
         FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
 
@@ -548,7 +547,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -640,7 +639,7 @@ git2r_diff_tree_to_index(
             nprotect++;
         }
 
-        GIT2R_BUF_DISPOSE(&buf);
+        git_buf_dispose(&buf);
     } else {
         FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
 
@@ -665,7 +664,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-	git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+	git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }
@@ -774,7 +773,7 @@ git2r_diff_tree_to_tree(
             nprotect++;
         }
 
-        GIT2R_BUF_DISPOSE(&buf);
+        git_buf_dispose(&buf);
     } else {
         FILE *fp = fopen(CHAR(STRING_ELT(filename, 0)), "w+");
 
@@ -801,7 +800,7 @@ cleanup:
         UNPROTECT(nprotect);
 
     if (error)
-	git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+	git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return result;
 }

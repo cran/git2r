@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -20,7 +20,6 @@
 #include <git2.h>
 
 #include "git2r_arg.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_S3.h"
 
@@ -514,7 +513,7 @@ git2r_copy_string_vec(
     /* Allocate the strings in dst */
     dst->strings = malloc(dst->count * sizeof(char*));
     if (!dst->strings) {
-        GIT2R_ERROR_SET_STR(GIT2R_ERROR_NONE, git2r_err_alloc_memory_buffer);
+        giterr_set_str(GIT_ERROR_NONE, git2r_err_alloc_memory_buffer);
         return GIT_ERROR;
     }
 

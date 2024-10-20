@@ -1,6 +1,6 @@
 /*
  *  git2r, R bindings to the libgit2 library.
- *  Copyright (C) 2013-2020 The git2r contributors
+ *  Copyright (C) 2013-2024 The git2r contributors
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License, version 2,
@@ -21,7 +21,6 @@
 
 #include "git2r_arg.h"
 #include "git2r_checkout.h"
-#include "git2r_deprecated.h"
 #include "git2r_error.h"
 #include "git2r_repository.h"
 
@@ -62,7 +61,7 @@ git2r_checkout_path(
     /* Allocate the strings in pathspec */
     opts.paths.strings = malloc(opts.paths.count * sizeof(char*));
     if (!opts.paths.strings) {
-        GIT2R_ERROR_SET_STR(GIT2R_ERROR_NONE, git2r_err_alloc_memory_buffer);
+        giterr_set_str(GIT_ERROR_NONE, git2r_err_alloc_memory_buffer);
         error = GIT_ERROR;
         goto cleanup;
     }
@@ -80,7 +79,7 @@ cleanup:
     git_repository_free(repository);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
@@ -120,13 +119,13 @@ git2r_checkout_tree(
         goto cleanup;
 
     switch (git_object_type(treeish)) {
-    case GIT2R_OBJECT_COMMIT:
-    case GIT2R_OBJECT_TAG:
-    case GIT2R_OBJECT_TREE:
+    case GIT_OBJECT_COMMIT:
+    case GIT_OBJECT_TAG:
+    case GIT_OBJECT_TREE:
         error = GIT_OK;
         break;
     default:
-        GIT2R_ERROR_SET_STR(GIT2R_ERROR_NONE, git2r_err_checkout_tree);
+        giterr_set_str(GIT_ERROR_NONE, git2r_err_checkout_tree);
         error = GIT_ERROR;
         break;
     }
@@ -145,7 +144,7 @@ cleanup:
     git_repository_free(repository);
 
     if (error)
-        git2r_error(__func__, GIT2R_ERROR_LAST(), NULL, NULL);
+        git2r_error(__func__, git_error_last(), NULL, NULL);
 
     return R_NilValue;
 }
