@@ -208,7 +208,7 @@ init <- function(path = ".", bare = FALSE, branch = NULL) {
 
 ##' Clone a remote repository
 ##'
-##' @param url The remote repository to clone
+##' @param url The remote repository to clone, or a local repository path.
 ##' @param local_path Local directory to clone to.
 ##' @param bare Create a bare repository. Default is FALSE.
 ##' @param branch The name of the branch to checkout. Default is NULL
@@ -219,6 +219,9 @@ init <- function(path = ".", bare = FALSE, branch = NULL) {
 ##'     access. Default is NULL. To use and query an ssh-agent for the
 ##'     ssh key credentials, let this parameter be NULL (the default).
 ##' @param progress Show progress. Default is TRUE.
+##' @param proxy Either \code{NULL} (the default) to disable proxy usage,
+##'     \code{TRUE} for automatic proxy detection, or a character string
+##'     with a proxy URL (for example, \code{"http://proxy.example.org:3128"}).
 ##' @return A \code{git_repository} object.
 ##' @seealso \link{repository}, \code{\link{cred_user_pass}},
 ##'     \code{\link{cred_ssh_key}}
@@ -267,15 +270,16 @@ init <- function(path = ".", bare = FALSE, branch = NULL) {
 ##' commits(repo_1)
 ##' commits(repo_2)
 ##' }
-clone <- function(url         = NULL,
-                  local_path  = NULL,
+clone <- function(url,
+                  local_path,
                   bare        = FALSE,
                   branch      = NULL,
                   checkout    = TRUE,
                   credentials = NULL,
-                  progress    = TRUE) {
+                  progress    = TRUE,
+                  proxy       = NULL) {
     .Call(git2r_clone, url, local_path, bare,
-          branch, checkout, credentials, progress)
+          branch, checkout, credentials, progress, proxy)
     repository(local_path)
 }
 

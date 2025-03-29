@@ -1,5 +1,5 @@
 # git2r, R bindings to the libgit2 library.
-# Copyright (C) 2013-2024 The git2r contributors
+# Copyright (C) 2013-2025 The git2r contributors
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2,
@@ -52,8 +52,15 @@ if test "x${INCLUDE_DIR}${LIB_DIR}" = x; then
         # Check if libgit2 is installed and have a version that is
         # compatible with git2r.
         if $PKG_CONFIG ${PKG_CONFIG_NAME} --atleast-version=${LIBGIT2_MIN_VERSION}; then
-            PKGCONFIG_CFLAGS=`"${PKG_CONFIG}" --cflags "${PKG_CONFIG_NAME}"`
-            PKGCONFIG_LIBS=`"${PKG_CONFIG}" --libs "${PKG_CONFIG_NAME}"`
+            PKGCONFIG_CFLAGS=`"${PKG_CONFIG}" --cflags --silence-errors "${PKG_CONFIG_NAME}"`
+            case "${host_os}" in
+                darwin*)
+                    PKGCONFIG_LIBS=`"${PKG_CONFIG}" --libs --static "${PKG_CONFIG_NAME}"`
+                ;;
+                *)
+                    PKGCONFIG_LIBS=`"${PKG_CONFIG}" --libs "${PKG_CONFIG_NAME}"`
+                ;;
+            esac
         fi
     fi
 
@@ -65,41 +72,6 @@ if test "x${INCLUDE_DIR}${LIB_DIR}" = x; then
                     BREWDIR=`brew --prefix`
                     PKG_CFLAGS="-I${BREWDIR}/opt/libgit2/include"
                     PKG_LIBS="-L${BREWDIR}/opt/libgit2/lib ${PKG_LIBS}"
-                elif test -z "${DISABLE_AUTOBREW}"; then
-                    # Try to download a static build of libgit2 and use that.
-                    bottle_ver="1.8.1"
-                    bottle_sha256="9419deece3c3b7bec2ed8ed1caa5f4a3f3f1b049a6d17b0a75b2e05128c10fdf"
-                    bottle_url="https://github.com/autobrew/bundler/releases/download"
-                    bottle="${bottle_url}/libgit2-${bottle_ver}/libgit2-${bottle_ver}-universal.tar.xz"
-
-                    # Download the bottle
-                    echo "Download autobrew bundle $(basename ${bottle})"
-                    curl -sSL $bottle -o libs.tar.xz
-
-                    # Verify the checksum of the downloaded bottle
-                    AC_MSG_CHECKING([SHA256 checksum of downloaded $(basename ${bottle})])
-                    : ${bottle_download_sha256=`openssl sha256 libs.tar.xz | sed -e 's:.*= ::'`}
-                    if test "x$bottle_download_sha256" != "x$bottle_sha256"; then
-                        AC_MSG_FAILURE([The SHA256 checksum of $(basename ${bottle}) didn't match])
-                    fi
-                    AC_MSG_RESULT([yes])
-
-                    # General setup
-                    BREWDIR="$PWD/.deps"
-                    mkdir -p $BREWDIR
-                    tar -xf libs.tar.xz --strip 1 -C $BREWDIR
-                    rm -f libs.tar.xz
-
-                    PKG_CFLAGS="-I${BREWDIR}/include"
-                    PKG_LIBS="-L${BREWDIR}/lib ${PKG_LIBS} -lssh2 -lcrypto -lcurl -lz -liconv -framework Security"
-
-                    # Prevent linking against other libs in /usr/local/lib
-                    for FILE in $BREWDIR/lib/*.a; do
-                        BASENAME=$(basename $FILE)
-                        LIBNAME=$(echo "${BASENAME%.*}" | cut -c4-)
-                        cp -f $FILE $BREWDIR/lib/libbrew$LIBNAME.a
-                        PKG_LIBS=$(echo $PKG_LIBS | sed "s/-l$LIBNAME /-lbrew$LIBNAME /g")
-                    done
                 fi
             ;;
         esac
@@ -129,7 +101,10 @@ if test "x${libgit2_ver_ok}" = xno; then
     echo "
   -----------------------------------------------------------------------
 
-   Configuration failed to find libgit2 library. Try installing:
+   Configuration failed to find 'libgit2 >= ${LIBGIT2_MIN_VERSION}' and its
+   dependencies libssh2 and openssl.
+
+   Try installing:
      * brew: libgit2 (MacOS)
      * deb: libgit2-dev   (Debian, Ubuntu, etc)
      * rpm: libgit2-devel (Fedora, CentOS, RHEL)
@@ -152,7 +127,7 @@ if test "x${libgit2_ver_ok}" = xno; then
 
 "
 
-    AC_MSG_FAILURE([package dependency requirement 'libgit2 >= ${LIBGIT2_MIN_VERSION}' could not be satisfied.])
+    AC_MSG_FAILURE([package dependency requirements 'libgit2 >= ${LIBGIT2_MIN_VERSION}', 'openssl', and 'libssh2' could not be satisfied.])
 fi
 
 # For debugging

@@ -1,3 +1,40 @@
+# git2r 0.36.2 (2025-03-29)
+
+## CHANGES
+
+* Use 'pkg-config --static --libs' in the build configuration script
+  on the Darwin platform.
+
+# git2r 0.36.1 (2025-03-28)
+
+## CHANGES
+
+* Updated the SystemRequirements field in the DESCRIPTION file to
+  include the libgit2 dependencies libssh2 and openssl.
+
+* Improved the error message in the build configuration script to also
+  mention the library dependencies 'openssl', and 'libssh2' when the
+  requirement 'libgit2 >= 1.0' could not be satisfied
+
+# git2r 0.36.0 (2025-03-27)
+
+## CHANGES
+
+* Added Proxy Support. The R Functions clone, fetch, push, and
+  remote_ls now include a proxy parameter, enabling users to define
+  proxy settings directly within these functions, see PR #461. Thanks
+  to Gregor Lichtner.
+
+* Switch linking on Windows to use pkg-config when available. Thanks
+  to Tomas Kalibera for providing the patch.
+
+* On macOS, the build configuration script no longer downloads a
+  static build of libgit2 since libgit2 is now included in the macOS
+  recicpes (https://github.com/R-macos/recipes).
+
+* Update clone function docs and params, see PR #475. Thanks to
+  Alexandros Kouretsis.
+
 # git2r 0.35.0 (2024-10-20)
 
 ## CHANGES
